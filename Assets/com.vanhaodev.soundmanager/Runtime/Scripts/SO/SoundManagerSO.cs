@@ -3,21 +3,30 @@ using UnityEngine;
 
 namespace vanhaodev.soundmanager
 {
-	public class SoundManagerSO : ScriptableObject
-	{
-		// 1️⃣ Danh sách channel runtime
-		[HideInInspector] public List<string> Channels = new List<string>();
+    [CreateAssetMenu(fileName = "SoundManager", menuName = "Sound Manager/Create Sound Manager", order = 0)]
+    public class SoundManagerSO : ScriptableObject
+    {
+        [HideInInspector] public List<string> Channels = new List<string>();
+        [HideInInspector] public List<SoundClipSO> SoundClips = new List<SoundClipSO>();
 
 #if UNITY_EDITOR
-		// 2️⃣ Hàm lần đầu tạo SO để thêm default channels
-		public void CreateDefaultChannelsIfEmpty()
-		{
-			if (Channels.Count == 0)
-			{
-				Channels.Add("BGM");
-				Channels.Add("SFX");
-			}
-		}
+        /// <summary>
+        /// Create default channels if Channels list is empty
+        /// </summary>
+        public void CreateDefaultChannelsIfEmpty()
+        {
+            if (Channels.Count == 0)
+            {
+                Channels.Add("BGM");
+                Channels.Add("SFX");
+
+                // Add 10 more channels: Channel2 ... Channel11
+                for (int i = 2; i <= 11; i++)
+                {
+                    Channels.Add("Channel" + i);
+                }
+            }
+        }
 #endif
-	}
+    }
 }
