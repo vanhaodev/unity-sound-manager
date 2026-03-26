@@ -1,9 +1,8 @@
-﻿#if UNITY_EDITOR
-using UnityEditor;
+﻿using UnityEditor;
 using UnityEngine;
 using System.IO;
 
-namespace vanhaodev.soundmanager
+namespace vanhaodev.soundmanager.editor
 {
     public static class SoundManagerSOCreate
     {
@@ -60,4 +59,3 @@ namespace vanhaodev.soundmanager
         }
     }
 }
-#endif

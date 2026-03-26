@@ -1,10 +1,7 @@
-﻿using System.Collections.Generic;
-using System.IO;
-using System.Text.RegularExpressions;
-using UnityEditor;
+﻿using UnityEditor;
 using UnityEngine;
 
-namespace vanhaodev.soundmanager
+namespace vanhaodev.soundmanager.editor
 {
 	public class SoundManagerLibraryWindow : EditorWindow
 	{

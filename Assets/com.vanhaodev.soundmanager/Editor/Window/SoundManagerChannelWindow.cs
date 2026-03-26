@@ -4,7 +4,7 @@ using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEngine;
 
-namespace vanhaodev.soundmanager
+namespace vanhaodev.soundmanager.editor
 {
 	public class SoundManagerChannelWindow : EditorWindow
 	{

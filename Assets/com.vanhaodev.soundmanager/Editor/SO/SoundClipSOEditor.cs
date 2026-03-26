@@ -1,9 +1,7 @@
-﻿#if UNITY_EDITOR
-using System.IO;
-using UnityEditor;
+﻿using UnityEditor;
 using UnityEngine;
 
-namespace vanhaodev.soundmanager
+namespace vanhaodev.soundmanager.editor
 {
 	[CustomEditor(typeof(SoundClipSO))]
 	public class SoundClipSOEditor : Editor
@@ -67,4 +65,3 @@ namespace vanhaodev.soundmanager
 		}
 	}
 }
-#endif

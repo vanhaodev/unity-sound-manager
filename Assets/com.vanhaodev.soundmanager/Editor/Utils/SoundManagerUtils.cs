@@ -3,7 +3,7 @@ using System.IO;
 using System.Text.RegularExpressions;
 using UnityEditor;
 
-namespace vanhaodev.soundmanager
+namespace vanhaodev.soundmanager.editor
 {
 	/// <summary>
 	/// Utility class for generating enums for SoundManager.

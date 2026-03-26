@@ -1,9 +1,7 @@
-﻿#if UNITY_EDITOR
-using System;
-using UnityEditor;
+﻿using UnityEditor;
 using UnityEngine;
 
-namespace vanhaodev.soundmanager
+namespace vanhaodev.soundmanager.editor
 {
     [CustomEditor(typeof(SoundManagerSO))]
     public class SoundManagerSOEditor : Editor
@@ -28,4 +26,3 @@ namespace vanhaodev.soundmanager
         }
     }
 }
-#endif

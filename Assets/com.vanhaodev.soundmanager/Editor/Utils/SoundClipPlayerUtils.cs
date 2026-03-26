@@ -1,8 +1,7 @@
-﻿#if UNITY_EDITOR
-using UnityEditor;
+﻿using UnityEditor;
 using UnityEngine;
 
-namespace vanhaodev.soundmanager
+namespace vanhaodev.soundmanager.editor
 {
     public class SoundClipPlayerUtils
     {
@@ -276,4 +275,3 @@ namespace vanhaodev.soundmanager
         }
     }
 }
-#endif
