@@ -19,6 +19,7 @@ namespace vanhaodev.soundmanager
 		}
 		public static void Open(SoundManagerSO so)
 		{
+			so.RestoreBackup();
 			var window = GetWindow<SoundManagerChannelWindow>("Channel Settings");
 			window._so = so;
 			window.minSize = new Vector2(300, 300);
@@ -55,18 +56,9 @@ namespace vanhaodev.soundmanager
 			if (GUI.Button(new Rect(10, position.height - BottomSaveHeight + 5, position.width - 20, 30),
 				    "Save Channels"))
 			{
-				if (_so.Channels.Count == 0)
-				{
-					EditorUtility.DisplayDialog(
-						"Warning",
-						"No channels to save.",
-						"OK"
-					);
-					return;
-				}
-
 				var enumPath = OnCreate();
-
+				_so.Backup();
+				_so.RestoreBackup();
 				EditorUtility.DisplayDialog(
 					"Success",
 					"Channels saved successfully!\n" +

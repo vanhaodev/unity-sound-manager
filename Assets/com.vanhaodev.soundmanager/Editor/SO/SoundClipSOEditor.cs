@@ -18,10 +18,6 @@ namespace vanhaodev.soundmanager
 			_player = new SoundClipPlayerUtils();
 			_player.SetSO(_so);
 			_player.SetRepaintTarget(this);
-			
-			var icon = EditorIconUtility.LoadIcon("a41d1b81b66ece74585606976d8cfbdd", "sound-clip");
-			if (icon != null)
-				EditorGUIUtility.SetIconForObject(target, icon);
 		}
 		private void OnDisable()
 		{

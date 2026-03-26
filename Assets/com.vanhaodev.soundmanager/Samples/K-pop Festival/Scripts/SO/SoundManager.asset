@@ -11,18 +11,18 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 85cde3e5d5544bc1a78b873248bd997a, type: 3}
   m_Name: SoundManager
-  m_EditorClassIdentifier: Assembly-CSharp::vanhaodev.soundmanager.SoundManagerSO
+  m_EditorClassIdentifier: com.vanhaodev.soundmanager::vanhaodev.soundmanager.SoundManagerSO
   Channels:
   - BGM
   - SFX
   - Channel2
   - Channel3
   - Channel4
-  - Channel5
+  - cccccccc
   - Channel6
-  - Channel7
+  - GFGFG
   - Channel8
   - Channel9
   - Channel10
-  - Channel11
+  - FGFGFG
   SoundClips: []

@@ -18,6 +18,7 @@ namespace vanhaodev.soundmanager
 
 		public static void Open(SoundManagerSO so)
 		{
+			so.RestoreBackup();
 			var window = GetWindow<SoundManagerLibraryWindow>("Sound Manager Library");
 			window._so = so;
 			window._soPath = AssetDatabase.GetAssetPath(so);
@@ -85,7 +86,8 @@ namespace vanhaodev.soundmanager
 
 				// Re-initialize serialized object after SaveAssets
 				InitializeSerialized();
-
+				_so.Backup();
+				_so.RestoreBackup();
 				EditorUtility.DisplayDialog("Sound Manager",
 					$"Sound library saved and enum generated for {_so.name}", "OK");
 			}

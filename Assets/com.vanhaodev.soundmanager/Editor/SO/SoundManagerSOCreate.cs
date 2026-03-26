@@ -43,8 +43,7 @@ namespace vanhaodev.soundmanager
             }
             
             SoundManagerSO asset = ScriptableObject.CreateInstance<SoundManagerSO>();
-            
-            asset.CreateDefaultChannelsIfEmpty();
+            asset.CreateDefaultChannelsIfEmpty(new SoundManagerUtils().GetEnumData("SoundChannelType"));
             
             string assetPath = AssetDatabase.GenerateUniqueAssetPath($"{folder}/SoundManager.asset");
             AssetDatabase.CreateAsset(asset, assetPath);
