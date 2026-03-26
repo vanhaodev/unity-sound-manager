@@ -193,6 +193,13 @@
       },
       "url": "https://packages.unity.com"
     },
+    "com.vanhaodev.objectpool": {
+      "version": "https://github.com/vanhaodev/unity-object-pool.git?path=Exported/com.vanhaodev.objectpool#1.0.0",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "362f93b068d56c67f62258abf38b9f1a2ff6cdc4"
+    },
     "com.unity.modules.accessibility": {
       "version": "1.0.0",
       "depth": 0,
