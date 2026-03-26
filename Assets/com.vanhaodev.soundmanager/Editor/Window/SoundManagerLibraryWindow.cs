@@ -91,13 +91,10 @@ namespace vanhaodev.soundmanager
 			}
 		}
 
-		private void GenerateEnum(SoundManagerSO so, out string path)
+		public void GenerateEnum(SoundManagerSO so, out string path)
 		{
 			path = null;
-
-			if (so.SoundClips == null || so.SoundClips.Count == 0)
-				return;
-
+			
 			var utils = new SoundManagerUtils();
 
 			utils.GenerateEnum(

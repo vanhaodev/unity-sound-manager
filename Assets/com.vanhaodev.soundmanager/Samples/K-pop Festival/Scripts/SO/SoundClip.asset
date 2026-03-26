@@ -10,8 +10,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 382800cd521a43a8a7817a5e7e60d9d9, type: 3}
-  m_Name: Supernatural_NewJeans
+  m_Name: SoundClip
   m_EditorClassIdentifier: Assembly-CSharp::vanhaodev.soundmanager.SoundClipSO
-  Clip: {fileID: 8300000, guid: db119e6a8b08c1b448b4cc5cfe384263, type: 3}
+  Clip: {fileID: 0}
   DefaultChannel: BGM
   Volume: 1

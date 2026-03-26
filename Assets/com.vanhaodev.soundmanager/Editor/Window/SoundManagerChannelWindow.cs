@@ -13,6 +13,10 @@ namespace vanhaodev.soundmanager
 
 		private const float BottomSaveHeight = 40f;
 
+		public void SetSO(SoundManagerSO so)
+		{
+			_so = so;
+		}
 		public static void Open(SoundManagerSO so)
 		{
 			var window = GetWindow<SoundManagerChannelWindow>("Channel Settings");
@@ -61,23 +65,7 @@ namespace vanhaodev.soundmanager
 					return;
 				}
 
-				var utils = new SoundManagerUtils();
-
-				// Sanitize names before saving so SO and enum are consistent
-				_so.Channels = utils.SanitizeNames(_so.Channels);
-
-				// Save the SO
-				EditorUtility.SetDirty(_so);
-				AssetDatabase.SaveAssets();
-
-				// Generate enum using utils
-				utils.GenerateEnum(
-					items: _so.Channels,
-					enumName: "SoundChannelType",
-					so: _so,
-					path: out string enumPath,
-					enumNamespace: "vanhaodev.soundmanager.generated"
-				);
+				var enumPath = OnCreate();
 
 				EditorUtility.DisplayDialog(
 					"Success",
@@ -86,6 +74,28 @@ namespace vanhaodev.soundmanager
 					"OK"
 				);
 			}
+		}
+
+		public string OnCreate()
+		{
+			var utils = new SoundManagerUtils();
+
+			// Sanitize names before saving so SO and enum are consistent
+			_so.Channels = utils.SanitizeNames(_so.Channels);
+
+			// Save the SO
+			EditorUtility.SetDirty(_so);
+			AssetDatabase.SaveAssets();
+
+			// Generate enum using utils
+			utils.GenerateEnum(
+				items: _so.Channels,
+				enumName: "SoundChannelType",
+				so: _so,
+				path: out string enumPath,
+				enumNamespace: "vanhaodev.soundmanager.generated"
+			);
+			return enumPath;
 		}
 	}
 }

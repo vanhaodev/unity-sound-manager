@@ -7,15 +7,15 @@ namespace vanhaodev.soundmanager.generated
 	{
 		BGM = 0,
 		SFX = 1,
-		Soundhehe = 2,
+		Channel2 = 2,
 		Channel3 = 3,
-		ccc = 4,
+		Channel4 = 4,
 		Channel5 = 5,
-		vcx = 6,
+		Channel6 = 6,
 		Channel7 = 7,
-		vc333333 = 8,
+		Channel8 = 8,
 		Channel9 = 9,
 		Channel10 = 10,
-		_454545 = 11,
+		Channel11 = 11,
 	}
 }

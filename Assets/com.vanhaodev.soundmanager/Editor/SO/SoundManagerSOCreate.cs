@@ -50,6 +50,14 @@ namespace vanhaodev.soundmanager
             AssetDatabase.CreateAsset(asset, assetPath);
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
+            
+            //Create enum when first create SoundManagerSO
+            var sm = EditorWindow.GetWindow<SoundManagerChannelWindow>("");
+            sm.SetSO(asset);
+            sm.OnCreate();
+            
+            var window = EditorWindow.GetWindow<SoundManagerLibraryWindow>("");
+            window.GenerateEnum(asset, out _);
         }
     }
 }

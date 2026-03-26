@@ -1,4 +1,5 @@
 ﻿#if UNITY_EDITOR
+using System;
 using UnityEditor;
 using UnityEngine;
 
@@ -7,6 +8,13 @@ namespace vanhaodev.soundmanager
     [CustomEditor(typeof(SoundManagerSO))]
     public class SoundManagerSOEditor : Editor
     {
+        private void OnEnable()
+        {
+            var icon = EditorIconUtility.LoadIcon("da9e01740a968c440913202759d93d06", "sound-manager");
+            if (icon != null)
+                EditorGUIUtility.SetIconForObject(target, icon);
+        }
+
         public override void OnInspectorGUI()
         {
             DrawDefaultInspector();

@@ -19,16 +19,6 @@ namespace vanhaodev.soundmanager
 		{
 			path = null;
 
-			if (items == null || items.Count == 0)
-			{
-				EditorUtility.DisplayDialog(
-					"Generate Enum",
-					"No items to generate enum.",
-					"OK"
-				);
-				return;
-			}
-
 			// Search the whole project for existing enum file
 			string[] guids = AssetDatabase.FindAssets(enumName + " t:Script");
 			string enumPath = null;

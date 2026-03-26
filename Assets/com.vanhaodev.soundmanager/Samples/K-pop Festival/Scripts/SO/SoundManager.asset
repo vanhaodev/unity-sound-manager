@@ -15,16 +15,14 @@ MonoBehaviour:
   Channels:
   - BGM
   - SFX
-  - Soundhehe
+  - Channel2
   - Channel3
-  - ccc
+  - Channel4
   - Channel5
-  - vcx
+  - Channel6
   - Channel7
-  - vc333333
+  - Channel8
   - Channel9
   - Channel10
-  - _454545
-  SoundClips:
-  - {fileID: 11400000, guid: d198e6c9942e70d42942e7c7a907377d, type: 2}
-  - {fileID: 11400000, guid: a44e98a1f2ace8b4e92553ed03a795eb, type: 2}
+  - Channel11
+  SoundClips: []
