@@ -3,7 +3,6 @@ using UnityEngine;
 
 namespace vanhaodev.soundmanager
 {
-    [CreateAssetMenu(fileName = "SoundManager", menuName = "Sound Manager/Create Sound Manager", order = 0)]
     public class SoundManagerSO : ScriptableObject
     {
         [HideInInspector] public List<string> Channels = new List<string>();

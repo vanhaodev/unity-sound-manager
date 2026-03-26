@@ -4,33 +4,67 @@ using UnityEngine;
 
 namespace vanhaodev.soundmanager
 {
-    [CustomEditor(typeof(SoundClipSO))]
-    public class SoundClipSOEditor : Editor
-    {
-        public override void OnInspectorGUI()
-        {
-            SoundClipSO so = (SoundClipSO)target;
+	[CustomEditor(typeof(SoundClipSO))]
+	public class SoundClipSOEditor : Editor
+	{
+		private SoundClipPlayerUtils _player;
+		private SoundClipSO _so;
 
-            DrawDefaultInspector();
+		private void OnEnable()
+		{
+			_so = (SoundClipSO)target;
 
-            // Load first SoundManagerSO in project
-            string[] guids = AssetDatabase.FindAssets("t:SoundManagerSO");
-            if (guids.Length > 0)
-            {
-                string path = AssetDatabase.GUIDToAssetPath(guids[0]);
-                SoundManagerSO sm = AssetDatabase.LoadAssetAtPath<SoundManagerSO>(path);
+			_player = new SoundClipPlayerUtils();
+			_player.SetSO(_so);
+			_player.SetRepaintTarget(this);
+		}
 
-                if (sm != null && sm.Channels.Count > 0)
-                {
-                    int index = Mathf.Max(sm.Channels.IndexOf(so.DefaultChannel), 0);
-                    index = EditorGUILayout.Popup("Default Channel", index, sm.Channels.ToArray());
-                    so.DefaultChannel = sm.Channels[index];
-                }
-            }
+		private void OnDisable()
+		{
+			_player?.Dispose();
+		}
 
-            if (GUI.changed)
-                EditorUtility.SetDirty(so);
-        }
-    }
+		public override void OnInspectorGUI()
+		{
+			_so = (SoundClipSO)target;
+
+			DrawDefaultInspector();
+			DrawDefaultChannelPopup();
+
+			EditorGUILayout.Space(10);
+			DrawAudioClipPreview();
+
+			if (GUI.changed)
+				EditorUtility.SetDirty(_so);
+		}
+
+		private void DrawDefaultChannelPopup()
+		{
+			string[] guids = AssetDatabase.FindAssets("t:SoundManagerSO");
+			if (guids.Length == 0) return;
+
+			string path = AssetDatabase.GUIDToAssetPath(guids[0]);
+			SoundManagerSO sm = AssetDatabase.LoadAssetAtPath<SoundManagerSO>(path);
+
+			if (sm == null || sm.Channels == null || sm.Channels.Count == 0)
+				return;
+
+			int index = Mathf.Max(sm.Channels.IndexOf(_so.DefaultChannel), 0);
+
+			index = EditorGUILayout.Popup(
+				"Default Channel",
+				index,
+				sm.Channels.ToArray()
+			);
+
+			_so.DefaultChannel = sm.Channels[index];
+		}
+
+		private void DrawAudioClipPreview()
+		{
+			if (_player == null) return;
+			_player.OnGUI();
+		}
+	}
 }
 #endif

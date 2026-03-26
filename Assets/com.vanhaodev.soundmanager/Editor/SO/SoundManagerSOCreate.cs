@@ -7,7 +7,7 @@ namespace vanhaodev.soundmanager
 {
     public static class SoundManagerSOCreate
     {
-        [MenuItem("Assets/Create/Sound Manager/Sound Manager", priority = 0)]
+        [MenuItem("Assets/Create/Sound Manager/Create Sound Manager", priority = 0)]
         public static void CreateSoundManager()
         {
             string folder = "Assets";
