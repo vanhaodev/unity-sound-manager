@@ -16,15 +16,17 @@ MonoBehaviour:
   - BGM
   - SFX
   - Channel2
-  - Channel3
-  - Channel4
-  - cccccccc
-  - Channel6
-  - GFGFG
   - Channel8
+  - _
+  - __1
+  - __3
+  - Channel7
   - Channel9
-  - Channel10
-  - FGFGFG
+  - __2
+  - __4
+  - __5
   SoundClips:
-  - {fileID: 11400000, guid: ac880088e91f11b458280708daa73685, type: 2}
-  - {fileID: 11400000, guid: aa45d0c689fd04b42960b1a9984e017a, type: 2}
+  - {fileID: 11400000, guid: a1eacba648577444dbd83b30454074d4, type: 2}
+  - {fileID: 11400000, guid: 0a9c2a566e355764c97969e2fd26daad, type: 2}
+  - {fileID: 11400000, guid: a1eacba648577444dbd83b30454074d4, type: 2}
+  - {fileID: 11400000, guid: a1eacba648577444dbd83b30454074d4, type: 2}

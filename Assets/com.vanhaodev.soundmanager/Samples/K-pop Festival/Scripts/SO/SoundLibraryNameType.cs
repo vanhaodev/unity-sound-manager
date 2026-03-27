@@ -5,7 +5,9 @@ namespace vanhaodev.soundmanager.generated
 {
 	public enum SoundLibraryNameType
 	{
-		HOT_SOUCE__BABYMONSTER = 0,
-		Supernatural__NewJeans = 1,
+		SoundClip = 0,
+		fdbgb = 1,
+		SoundClip_1 = 2,
+		SoundClip_2 = 3,
 	}
 }

@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 382800cd521a43a8a7817a5e7e60d9d9, type: 3}
-  m_Name: Supernatural - NewJeans
+  m_Name: fdbgb
   m_EditorClassIdentifier: com.vanhaodev.soundmanager::vanhaodev.soundmanager.SoundClipSO
   Clip: {fileID: 0}
   DefaultChannel: BGM

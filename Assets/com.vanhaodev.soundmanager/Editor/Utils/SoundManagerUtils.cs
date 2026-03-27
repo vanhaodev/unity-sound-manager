@@ -11,50 +11,52 @@ namespace vanhaodev.soundmanager.editor
 	/// </summary>
 	public class SoundManagerUtils
 	{
-		 /// <summary>
-        /// Search for an existing enum file in the project and return the list of enum items in order.
-        /// If the enum file does not exist, returns an empty list.
-        /// </summary>
-        public List<string> GetEnumData(string enumName, string enumNamespace = "vanhaodev.soundmanager.generated")
-        {
-            List<string> result = new List<string>();
+		/// <summary>
+		/// Search for an existing enum file in the project and return the list of enum items in order.
+		/// If the enum file does not exist, returns an empty list.
+		/// </summary>
+		public List<string> GetEnumData(string enumName, string enumNamespace = "vanhaodev.soundmanager.generated")
+		{
+			List<string> result = new List<string>();
 
-            // Search all scripts with the given enum name
-            string[] guids = AssetDatabase.FindAssets(enumName + " t:Script");
+			// Search all scripts with the given enum name
+			string[] guids = AssetDatabase.FindAssets(enumName + " t:Script");
 
-            foreach (var guid in guids)
-            {
-                string filePath = AssetDatabase.GUIDToAssetPath(guid);
-                string text = File.ReadAllText(filePath);
+			foreach (var guid in guids)
+			{
+				string filePath = AssetDatabase.GUIDToAssetPath(guid);
+				string text = File.ReadAllText(filePath);
 
-                // Check if the namespace and enum exist
-                if (text.Contains($"namespace {enumNamespace}") && text.Contains($"enum {enumName}"))
-                {
-                    // Regex to extract enum body { ... }
-                    var match = Regex.Match(text, @"enum\s+" + Regex.Escape(enumName) + @"\s*\{([\s\S]*?)\}", RegexOptions.Multiline);
-                    if (match.Success)
-                    {
-                        string body = match.Groups[1].Value;
+				// Check if the namespace and enum exist
+				if (text.Contains($"namespace {enumNamespace}") && text.Contains($"enum {enumName}"))
+				{
+					// Regex to extract enum body { ... }
+					var match = Regex.Match(text, @"enum\s+" + Regex.Escape(enumName) + @"\s*\{([\s\S]*?)\}",
+						RegexOptions.Multiline);
+					if (match.Success)
+					{
+						string body = match.Groups[1].Value;
 
-                        // Split lines and extract enum names (ignore = value)
-                        string[] lines = body.Split(new[] { '\n', '\r' }, System.StringSplitOptions.RemoveEmptyEntries);
-                        foreach (var line in lines)
-                        {
-                            string trimmed = line.Trim().TrimEnd(','); // remove trailing comma
-                            if (string.IsNullOrEmpty(trimmed)) continue;
+						// Split lines and extract enum names (ignore = value)
+						string[] lines = body.Split(new[] { '\n', '\r' }, System.StringSplitOptions.RemoveEmptyEntries);
+						foreach (var line in lines)
+						{
+							string trimmed = line.Trim().TrimEnd(','); // remove trailing comma
+							if (string.IsNullOrEmpty(trimmed)) continue;
 
-                            // Take the name before '=' if present
-                            string[] parts = trimmed.Split('=');
-                            result.Add(parts[0].Trim());
-                        }
-                    }
+							// Take the name before '=' if present
+							string[] parts = trimmed.Split('=');
+							result.Add(parts[0].Trim());
+						}
+					}
 
-                    break; // enum found, exit loop
-                }
-            }
+					break; // enum found, exit loop
+				}
+			}
 
-            return result; // if not found, return empty list
-        }
+			return result; // if not found, return empty list
+		}
+
 		/// <summary>
 		/// Generate an enum from a list of names, overwrite existing enum if found.
 		/// </summary>
@@ -87,16 +89,13 @@ namespace vanhaodev.soundmanager.editor
 
 			path = enumPath;
 
-			// Sanitize names
-			List<string> sanitizedNames = SanitizeNames(items);
-
 			// Build enum text with auto-generation warning
 			string enumText = "// Auto-generated enum by SoundManager\n";
 			enumText += "// Do not edit manually. Changes will be overwritten.\n\n";
 			enumText += $"namespace {enumNamespace}\n{{\n";
 			enumText += $"\tpublic enum {enumName}\n\t{{\n";
-			for (int i = 0; i < sanitizedNames.Count; i++)
-				enumText += $"\t\t{sanitizedNames[i]} = {i},\n";
+			for (int i = 0; i < items.Count; i++)
+				enumText += $"\t\t{items[i]} = {i},\n";
 			enumText += "\t}\n}";
 
 			// Write file and refresh
@@ -148,6 +147,62 @@ namespace vanhaodev.soundmanager.editor
 			}
 
 			return sanitizedNames;
+		}
+
+		public void OnCreateNew(SoundManagerSO so)
+		{
+			var chnl = OnCreateChannel(so);
+			var snd = OnCreateSound(so);
+
+			EditorUtility.SetDirty(so);
+			AssetDatabase.SaveAssets();
+			EditorUtility.DisplayDialog(
+				"Success",
+				$"SoundChannelType enum generated at: {chnl}\nSoundLibraryNameType enum generated at: {snd}",
+				"OK"
+			);
+		}
+
+		public string OnCreateChannel(SoundManagerSO so)
+		{
+			var utils = new SoundManagerUtils();
+			so.Channels = utils.SanitizeNames(so.Channels);
+			utils.GenerateEnum(
+				items: so.Channels,
+				enumName: "SoundChannelType",
+				so: so,
+				path: out string enumPath,
+				enumNamespace: "vanhaodev.soundmanager.generated"
+			);
+			return enumPath;
+		}
+
+		public string OnCreateSound(SoundManagerSO so)
+		{
+			var utils = new SoundManagerUtils();
+
+			// Filter null / missing clips
+			List<SoundClipSO> validClips = so.SoundClips
+				.FindAll(c => c != null && !string.IsNullOrEmpty(c.name));
+
+			// Sync SO
+			so.SoundClips = new List<SoundClipSO>(validClips);
+
+			// Get sanitized names
+			List<string> clipNames = utils.SanitizeNames(
+				validClips.ConvertAll(c => c.name)
+			);
+
+			// Generate enum
+			utils.GenerateEnum(
+				items: clipNames,
+				enumName: "SoundLibraryNameType",
+				so: so,
+				path: out string enumPath,
+				enumNamespace: "vanhaodev.soundmanager.generated"
+			);
+
+			return enumPath;
 		}
 	}
 }
