@@ -16,7 +16,7 @@ namespace vanhaodev.soundmanager
         [Header("Audio Clip Settings")] [Tooltip("The audio clip to play.")]
         public AudioClip Clip;
 
-        [HideInInspector] public string DefaultChannel;
+        [HideInInspector] public int DefaultChannel;
 
         [Range(0f, 1f), Tooltip("Default volume of this sound.")]
         public float Volume = 1f;

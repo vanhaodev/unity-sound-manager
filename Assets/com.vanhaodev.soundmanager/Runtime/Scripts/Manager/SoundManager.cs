@@ -12,6 +12,7 @@ namespace vanhaodev.soundmanager
         private ObjectPool<SoundPlayer> _pool;
         private Dictionary<int /*channel*/, Dictionary<int /*instanceid*/, SoundPlayer>> _spawnedShots = new();
         private Dictionary<int /*channel*/, Dictionary<int /*instanceid*/, SoundPlayer>> _spawnedLoops = new();
+        private Dictionary<int, float> _channelVolumes = new();
         private void Awake()
         {
             _pool = new ObjectPool<SoundPlayer>(
@@ -21,6 +22,11 @@ namespace vanhaodev.soundmanager
                 onRelease: ResetSoundPlayer,
                 onDestroy: Destroy
             );
+            
+            for (int i = 0; i < _soundManagerSO.Channels.Count; i++)
+            {
+                _channelVolumes.Add(i, 1);
+            }
         }
         
         private SoundPlayer CreateSoundPlayer()
@@ -87,32 +93,31 @@ namespace vanhaodev.soundmanager
             }
         }
 
-        // public void PlayOneShot(int soundIndex, int channelIndex = -1)
-        // {
-        //     var lib = _soundManagerSO.SoundClips[soundIndex];
-        //     if (channelIndex == -1)
-        //     {
-        //         channelIndex = lib.DefaultChannel;
-        //     }
-        //
-        //     CheckLimitPlayer(channelIndex, _spawnedShots);
-        //
-        //     SoundPlayer player = _pool.Get();
-        //     player.gameObject.SetActive(true);
-        //
-        //     player.AudioSource.clip = lib.Clip;
-        //     player.AudioSource.loop = false;
-        //
-        //     if (!_spawnedShots[channelIndex].Contains(player))
-        //     {
-        //         _spawnedShots[channelIndex].Add(player);
-        //     }
-        //
-        //     player.AudioSource.Play();
-        //     // Debug.LogError($"Play one shot of type {lib.Type}: {id}");
-        //     // Sau khi âm thanh kết thúc, trả lại vào pool
-        //     StartCoroutine(WaitAndReturnToPool(player));
-        // }
+        public void PlayOneShot(int soundIndex, int channelIndex = -1, int playCount = 1)
+        {
+            var lib = _soundManagerSO.SoundClips[soundIndex];
+            if (channelIndex == -1)
+            {
+                channelIndex = lib.DefaultChannel;
+            }
+        
+            CheckLimitPlayer(channelIndex, _spawnedShots);
+        
+            SoundPlayer player = _pool.Get();
+            player.AudioSource.clip = lib.Clip;
+            player.AudioSource.loop = false;
+            player.SetVolume(lib, _channelVolumes[channelIndex]);
+            player.gameObject.SetActive(true);
+        
+        
+            if (!_spawnedShots[channelIndex].ContainsKey(player.GetEntityId()))
+            {
+                _spawnedShots[channelIndex].Add(player.GetEntityId(), player);
+            }
+        
+            player.AudioSource.Play();
+            StartCoroutine(WaitAndReturnToPool(player, playCount));
+        }
         //
         // public void PlayLoop(int soundIndex, int channelIndex = -1)
         // {
@@ -130,19 +135,21 @@ namespace vanhaodev.soundmanager
         //     }
         // }
         //
-        // private IEnumerator WaitAndReturnToPool(SoundPlayer player)
-        // {
-        //     string originalId = player.Id;
-        //     yield return new WaitForSeconds(player.AudioSource.clip.length);
-        //
-        //     _spawnedSounds[player.Type].Remove(player);
-        //     if (player.Id != originalId)
-        //     {
-        //         //Debug.LogError("player đã bị tái sử dụng cho âm thanh khác: " + JsonConvert.SerializeObject(player));
-        //         yield break; // player đã bị tái sử dụng cho âm thanh khác
-        //     }
-        //
-        //     _pool.Put(player);
-        // }
+        private IEnumerator WaitAndReturnToPool(SoundPlayer player, int playCount)
+        {
+            int originalId = player.GetEntityId();
+
+            var clip = player.AudioSource.clip;
+            float length = clip.length;
+
+            for (int i = 0; i < playCount; i++)
+            {
+                player.AudioSource.Play();
+                yield return new WaitForSeconds(length);
+            }
+
+            _spawnedShots[player.Channel].Remove(originalId);
+            _pool.Release(player);
+        }
     }
 }

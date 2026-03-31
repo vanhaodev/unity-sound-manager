@@ -13,5 +13,5 @@ MonoBehaviour:
   m_Name: SoundClip
   m_EditorClassIdentifier: com.vanhaodev.soundmanager::vanhaodev.soundmanager.SoundClipSO
   Clip: {fileID: 8300000, guid: db119e6a8b08c1b448b4cc5cfe384263, type: 3}
-  DefaultChannel: BGM
+  DefaultChannel: 4
   Volume: 1

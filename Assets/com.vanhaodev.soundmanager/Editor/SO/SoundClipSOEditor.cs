@@ -47,7 +47,7 @@ namespace vanhaodev.soundmanager.editor
 			if (sm == null || sm.Channels == null || sm.Channels.Count == 0)
 				return;
 
-			int index = Mathf.Max(sm.Channels.IndexOf(_so.DefaultChannel), 0);
+			int index = Mathf.Max(_so.DefaultChannel, 0);
 
 			index = EditorGUILayout.Popup(
 				"Default Channel",
@@ -55,7 +55,7 @@ namespace vanhaodev.soundmanager.editor
 				sm.Channels.ToArray()
 			);
 
-			_so.DefaultChannel = sm.Channels[index];
+			_so.DefaultChannel = index;
 		}
 
 		private void DrawAudioClipPreview()
