@@ -6,12 +6,9 @@ namespace vanhaodev.soundmanager
 	{
 		[SerializeField] AudioSource _audioSource;
 		public AudioSource AudioSource => _audioSource;
-		public int Channel { get; private set; }
+		public int Channel;
+		public int CurrentPlayId;
 
-		public void SetChannel(int channel)
-		{
-			Channel = channel;
-		}
 		public void SetVolume(SoundClipSO soundClipSO, float channelVolume)
 		{
 			var clipVolume = soundClipSO.Volume;

@@ -5,9 +5,8 @@ namespace vanhaodev.soundmanager.generated
 {
 	public enum SoundLibraryNameType
 	{
-		SoundClip = 0,
-		fdbgb = 1,
-		SoundClip_1 = 2,
-		SoundClip_2 = 3,
+		bell = 0,
+		maintheme1 = 1,
+		maintheme2 = 2,
 	}
 }

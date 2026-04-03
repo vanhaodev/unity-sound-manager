@@ -15,18 +15,7 @@ MonoBehaviour:
   Channels:
   - BGM
   - SFX
-  - Channel2
-  - Channel8
-  - _
-  - __1
-  - __3
-  - Channel7
-  - Channel9
-  - __2
-  - __4
-  - __5
   SoundClips:
   - {fileID: 11400000, guid: a1eacba648577444dbd83b30454074d4, type: 2}
-  - {fileID: 11400000, guid: 0a9c2a566e355764c97969e2fd26daad, type: 2}
-  - {fileID: 11400000, guid: a1eacba648577444dbd83b30454074d4, type: 2}
-  - {fileID: 11400000, guid: a1eacba648577444dbd83b30454074d4, type: 2}
+  - {fileID: 11400000, guid: e4d7522bbda8cf54ab2bf054560717a8, type: 2}
+  - {fileID: 11400000, guid: 7d2706ed9d43cda49a16edfb67f7c43e, type: 2}
