@@ -24,7 +24,7 @@ namespace vanhaodev.soundmanager
 				initialSize: 2,
 				onGet: null,
 				onRelease: ResetSoundPlayer,
-				onDestroy: Destroy
+				onDestroy: (g) => { Destroy(g.gameObject); }
 			);
 
 			_spawnedPlayers = new();
@@ -180,7 +180,6 @@ namespace vanhaodev.soundmanager
 			dict[playId] = player;
 
 			player.AudioSource.Play();
-			Debug.Log(Dump());
 			return playId;
 		}
 
@@ -239,14 +238,17 @@ namespace vanhaodev.soundmanager
 		/// <param name="clearPlaying">
 		/// True to force stop/destroy all sounds; false to only clear idle sounds.
 		/// </param>
-		public void RenewSystem(bool clearPlaying)
+		public void Clear(bool clearPlaying)
 		{
 			_pool.Clear(includeActive: clearPlaying);
 
 			// Also clear the spawned dictionary, since pool objects are destroyed
-			foreach (var dict in _spawnedPlayers.Values)
+			if (clearPlaying)
 			{
-				dict.Clear();
+				foreach (var dict in _spawnedPlayers.Values)
+				{
+					dict.Clear();
+				}
 			}
 		}
 

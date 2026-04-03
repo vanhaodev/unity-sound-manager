@@ -11,12 +11,13 @@ namespace vanhaodev.soundmanager.Samples.K_pop_Festival
 
 		public void PlaySFXTest()
 		{
-			_soundManager.PlayOneShot(0, (int)SoundChannelType.SFX, 5);
+			_soundManager.PlayOneShot(0, (int)SoundChannelType.SFX);
 		}
 
 		public void PlayMainTheme1()
 		{
 			if (_theme1PlayId != -1) return;
+			StopMainTheme2();
 			_theme1PlayId = _soundManager.PlayLoop((int)SoundLibraryNameType.maintheme1, (int)SoundChannelType.BGM);
 		}
 
@@ -31,6 +32,7 @@ namespace vanhaodev.soundmanager.Samples.K_pop_Festival
 		public void PlayMainTheme2()
 		{
 			if (_theme2PlayId != -1) return;
+			StopMainTheme1();
 			_theme2PlayId = _soundManager.PlayLoop((int)SoundLibraryNameType.maintheme2, (int)SoundChannelType.BGM);
 		}
 
@@ -44,12 +46,16 @@ namespace vanhaodev.soundmanager.Samples.K_pop_Festival
 
 		public void ClearSoundManager()
 		{
-			_soundManager.RenewSystem(false);
+			_soundManager.Clear(false);
+			_theme1PlayId = -1;
+			_theme2PlayId = -1;
 		}
 
 		public void ClearSoundManagerForce()
 		{
-			_soundManager.RenewSystem(true);
+			_soundManager.Clear(true);
+			_theme1PlayId = -1;
+			_theme2PlayId = -1;
 		}
 	}
 }
