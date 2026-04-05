@@ -1281,9 +1281,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 'Clear Force
-
-    (Include Playing)'
+  m_text: Clear All
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -1310,7 +1308,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 40.3
+  m_fontSize: 45
   m_fontSizeBase: 60
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -1528,8 +1526,8 @@ RectTransform:
   m_Children:
   - {fileID: 297046518}
   - {fileID: 963208376}
-  - {fileID: 1937867683}
   - {fileID: 86962717}
+  - {fileID: 1937867683}
   - {fileID: 705881820}
   - {fileID: 1252031403}
   - {fileID: 1432355844}
@@ -1714,7 +1712,7 @@ GameObject:
   - component: {fileID: 1252031405}
   - component: {fileID: 1252031404}
   m_Layer: 5
-  m_Name: Clear
+  m_Name: ClearNotPlaying
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1787,7 +1785,7 @@ MonoBehaviour:
       - m_Target: {fileID: 284840139}
         m_TargetAssemblyTypeName: vanhaodev.soundmanager.Samples.K_pop_Festival.KpopFTVManager,
           Assembly-CSharp
-        m_MethodName: ClearSoundManager
+        m_MethodName: ClearNotPlaying
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -1892,7 +1890,9 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Clear
+  m_text: 'Clear Not
+
+    Playing'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -1919,7 +1919,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 45
+  m_fontSize: 44.1
   m_fontSizeBase: 60
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -1985,7 +1985,7 @@ GameObject:
   - component: {fileID: 1432355846}
   - component: {fileID: 1432355845}
   m_Layer: 5
-  m_Name: ClearForce
+  m_Name: ClearAll
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2058,7 +2058,7 @@ MonoBehaviour:
       - m_Target: {fileID: 284840139}
         m_TargetAssemblyTypeName: vanhaodev.soundmanager.Samples.K_pop_Festival.KpopFTVManager,
           Assembly-CSharp
-        m_MethodName: ClearSoundManagerForce
+        m_MethodName: ClearAll
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}

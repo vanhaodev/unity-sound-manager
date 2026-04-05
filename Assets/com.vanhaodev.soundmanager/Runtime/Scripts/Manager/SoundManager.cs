@@ -8,12 +8,13 @@ using UnityEngine;
 
 namespace vanhaodev.soundmanager
 {
-	public class SoundManager : MonoBehaviour
+	public partial class SoundManager : MonoBehaviour
 	{
 		[SerializeField] private SoundManagerSO _soundManagerSO;
 		[SerializeField] private SoundPlayer _soundPlayerPrefab;
 		private ObjectPool<SoundPlayer> _pool;
-		private Dictionary<int /*channel*/, Dictionary<int /*playId*/, SoundPlayer>> _spawnedPlayers;
+		private Dictionary<int /*channel*/, Dictionary<int /*playId*/, SoundPlayer>> _playingSounds;
+		private float _masterVolume = 1;
 		private Dictionary<int, float> _channelVolumes;
 		private int _nextPlayId = 1;
 
@@ -27,7 +28,7 @@ namespace vanhaodev.soundmanager
 				onDestroy: (g) => { Destroy(g.gameObject); }
 			);
 
-			_spawnedPlayers = new();
+			_playingSounds = new();
 
 			_channelVolumes = new();
 			for (int i = 0; i < _soundManagerSO.Channels.Count; i++)
@@ -63,7 +64,7 @@ namespace vanhaodev.soundmanager
 			int targetChannel = -1;
 
 			// 1. Try preferred channel first, only take one-shot sounds
-			if (_spawnedPlayers.TryGetValue(channel, out var dict) && dict.Count > 0)
+			if (_playingSounds.TryGetValue(channel, out var dict) && dict.Count > 0)
 			{
 				foreach (var kv in dict)
 				{
@@ -80,7 +81,7 @@ namespace vanhaodev.soundmanager
 			// 2. Fallback: search any channel for one-shot sounds
 			if (player == null)
 			{
-				foreach (var kvp in _spawnedPlayers)
+				foreach (var kvp in _playingSounds)
 				{
 					dict = kvp.Value;
 					if (dict.Count == 0) continue;
@@ -103,7 +104,7 @@ namespace vanhaodev.soundmanager
 			// 3. Release the found one-shot sound
 			if (player != null)
 			{
-				_spawnedPlayers[targetChannel].Remove(instanceId); // O(1)
+				_playingSounds[targetChannel].Remove(instanceId); // O(1)
 				_pool.Release(player);
 			}
 		}
@@ -134,15 +135,14 @@ namespace vanhaodev.soundmanager
 			player.CurrentPlayId = playId;
 			player.AudioSource.clip = lib.Clip;
 			player.AudioSource.loop = false;
-			player.SetVolume(lib, _channelVolumes[channelIndex]);
+			player.Init(lib, _channelVolumes[channelIndex], _masterVolume);
 			player.gameObject.SetActive(true);
 
-			if (!_spawnedPlayers.TryGetValue(channelIndex, out var dict))
-				_spawnedPlayers[channelIndex] = dict = new Dictionary<int, SoundPlayer>();
+			if (!_playingSounds.TryGetValue(channelIndex, out var dict))
+				_playingSounds[channelIndex] = dict = new Dictionary<int, SoundPlayer>();
 			dict[playId] = player;
 
 			StartCoroutine(WaitAndReturnToPool(player, playId, playCount));
-			Debug.Log(Dump());
 			return playId;
 		}
 
@@ -172,11 +172,11 @@ namespace vanhaodev.soundmanager
 			player.CurrentPlayId = playId;
 			player.AudioSource.clip = lib.Clip;
 			player.AudioSource.loop = true;
-			player.SetVolume(lib, _channelVolumes[channelIndex]);
+			player.Init(lib, _channelVolumes[channelIndex], _masterVolume);
 			player.gameObject.SetActive(true);
 
-			if (!_spawnedPlayers.TryGetValue(channelIndex, out var dict))
-				_spawnedPlayers[channelIndex] = dict = new Dictionary<int, SoundPlayer>();
+			if (!_playingSounds.TryGetValue(channelIndex, out var dict))
+				_playingSounds[channelIndex] = dict = new Dictionary<int, SoundPlayer>();
 			dict[playId] = player;
 
 			player.AudioSource.Play();
@@ -191,7 +191,7 @@ namespace vanhaodev.soundmanager
 		/// <returns>Stop success</returns>
 		public bool StopByPlayId(int playId)
 		{
-			foreach (var dict in _spawnedPlayers.Values)
+			foreach (var dict in _playingSounds.Values)
 			{
 				if (dict.TryGetValue(playId, out var player))
 				{
@@ -214,7 +214,14 @@ namespace vanhaodev.soundmanager
 			{
 				if (player.CurrentPlayId != playId) yield break;
 
-				player.AudioSource.Play();
+				try
+				{
+					player.AudioSource.Play();
+				}
+				catch
+				{
+					yield break;
+				}
 
 				// End: double-check playId to avoid race condition
 				if (player.CurrentPlayId != playId) yield break;
@@ -224,7 +231,7 @@ namespace vanhaodev.soundmanager
 
 			if (player.CurrentPlayId != playId) yield break;
 
-			if (_spawnedPlayers.TryGetValue(player.Channel, out var dict))
+			if (_playingSounds.TryGetValue(player.Channel, out var dict))
 				dict.Remove(playId);
 
 			_pool.Release(player);
@@ -245,7 +252,7 @@ namespace vanhaodev.soundmanager
 			// Also clear the spawned dictionary, since pool objects are destroyed
 			if (clearPlaying)
 			{
-				foreach (var dict in _spawnedPlayers.Values)
+				foreach (var dict in _playingSounds.Values)
 				{
 					dict.Clear();
 				}
@@ -256,7 +263,7 @@ namespace vanhaodev.soundmanager
 		{
 			var result = new Dictionary<int, List<int>>();
 
-			foreach (var ch in _spawnedPlayers)
+			foreach (var ch in _playingSounds)
 			{
 				result[ch.Key] = new List<int>(ch.Value.Keys);
 			}
