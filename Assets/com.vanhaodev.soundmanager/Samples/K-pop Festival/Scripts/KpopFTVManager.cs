@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 using vanhaodev.soundmanager.generated;
 
@@ -63,6 +65,72 @@ namespace vanhaodev.soundmanager.Samples.K_pop_Festival
 			_theme1PlayId = -1;
 			_theme2PlayId = -1;
 			Debug.Log(_soundManager.Dump());
+		}
+
+		//volume
+		private Vector2 _scrollPos;
+
+		private void OnGUI()
+		{
+			Rect areaRect = new Rect(10, 10, 980, 680);
+
+			GUILayout.BeginArea(areaRect, GUI.skin.box);
+
+			_scrollPos = GUILayout.BeginScrollView(_scrollPos, false, true);
+
+			GUIStyle labelStyle = new GUIStyle(GUI.skin.label);
+			labelStyle.fontSize = 32;
+
+			GUIStyle sliderStyle = new GUIStyle(GUI.skin.horizontalSlider);
+			sliderStyle.fixedHeight *= 3f;
+
+			GUIStyle thumbStyle = new GUIStyle(GUI.skin.horizontalSliderThumb);
+			thumbStyle.fixedHeight *= 3f;
+
+			// Master volume
+			GUILayout.Label("Master Volume", labelStyle);
+			float newMaster = GUILayout.HorizontalSlider(
+				_soundManager.MasterVolume, 0f, 1f, sliderStyle, thumbStyle
+			);
+			if (Math.Abs(newMaster - _soundManager.MasterVolume) > 0.001f)
+			{
+				OnVolumeChanged(-1, newMaster);
+			}
+
+			GUILayout.Space(20);
+
+			// Channel volumes
+			foreach (var kvp in new Dictionary<int, float>(_soundManager.ChannelVolumes))
+			{
+				GUILayout.Label($"{_soundManager.GetChannelName(kvp.Key)} Volume", labelStyle);
+				float newVol = GUILayout.HorizontalSlider(
+					kvp.Value, 0f, 1f, sliderStyle, thumbStyle
+				);
+				if (Math.Abs(newVol - kvp.Value) > 0.001f)
+				{
+					_soundManager.ChannelVolumes[kvp.Key] = newVol;
+					OnVolumeChanged(kvp.Key, newVol);
+				}
+
+				GUILayout.Space(15);
+			}
+
+			GUILayout.EndScrollView();
+			GUILayout.EndArea();
+		}
+
+
+		private void OnVolumeChanged(int channel, float volume)
+		{
+			if (channel == -1)
+			{
+				_soundManager.SetMasterVolume(volume);
+				_soundManager.RefreshVolumeAllChannels();
+				return;
+			}
+
+			_soundManager.SetChannelVolume(channel, volume);
+			_soundManager.RefreshVolume(channel);
 		}
 	}
 }

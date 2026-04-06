@@ -17,7 +17,8 @@ namespace vanhaodev.soundmanager
 		private float _masterVolume = 1;
 		private Dictionary<int, float> _channelVolumes;
 		private int _nextPlayId = 1;
-
+		public float MasterVolume => _masterVolume;
+		public Dictionary<int, float> ChannelVolumes => _channelVolumes;
 		private void Awake()
 		{
 			_pool = new ObjectPool<SoundPlayer>(
