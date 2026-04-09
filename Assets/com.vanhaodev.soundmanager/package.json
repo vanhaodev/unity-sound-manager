@@ -2,17 +2,26 @@
   "name": "com.vanhaodev.soundmanager",
   "version": "1.0.0",
   "displayName": "Sound Manager",
-  "description": "A lightweight and high-performance audio management system for Unity. Easily manage music and sound effects with channel-based volume control, pooling, and simple APIs.",
+  "description": "A lightweight and high-performance sound system for Unity. Supports SFX, music, channel-based volume control, and simple playback APIs.",
   "unity": "6000.0",
   "author": {
     "name": "vanhaodev"
   },
+  "dependencies": {
+    "com.vanhaodev.objectpool": "https://github.com/vanhaodev/unity-object-pool.git?path=Exported/com.vanhaodev.objectpool#1.0.1"
+  },
   "documentationUrl": "https://github.com/vanhaodev/unity-sound-manager",
-  "keywords": ["vanhaodev", "sound", "audio", "music", "sfx", "unity"],
+  "keywords": [
+    "vanhaodev",
+    "sound",
+    "music",
+    "audio",
+    "sfx"
+  ],
   "samples": [
     {
       "displayName": "K-pop Festival",
-      "description": "A sample project demonstrating how to use the Sound Manager.",
+      "description": "Example scene demonstrating how to use the Sound Manager.",
       "path": "Samples~"
     }
   ]
