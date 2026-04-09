@@ -17,5 +17,12 @@
     "music",
     "audio",
     "sfx"
+  ],
+  "samples": [
+    {
+      "displayName": "K-pop Festival",
+      "description": "Example scene demonstrating how to use the Sound Manager.",
+      "path": "Samples~/K-pop Festival"
+    }
   ]
 }
