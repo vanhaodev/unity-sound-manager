@@ -7,9 +7,6 @@
   "author": {
     "name": "vanhaodev"
   },
-  "dependencies": {
-    "com.vanhaodev.objectpool": "https://github.com/vanhaodev/unity-object-pool.git?path=Exported/com.vanhaodev.objectpool#1.0.1"
-  },
   "documentationUrl": "https://github.com/vanhaodev/unity-sound-manager/blob/main/Docs/Guide.md",
   "keywords": [
     "vanhaodev",
