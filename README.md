@@ -2,9 +2,10 @@
 
 **SoundManager** is a lightweight Unity package for handling game audio in a simple and beginner-friendly way.
 
-👉 **Read full guide here:** [Documentation](Docs/Guide.md)
+![](Docs/Images/sample.png)
 
 ---
+## 👉 [Read Full Documentation](Docs/Guide.md)
 
 ## Features
 
