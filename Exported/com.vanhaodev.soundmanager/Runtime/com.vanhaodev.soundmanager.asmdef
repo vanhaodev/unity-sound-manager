@@ -1,0 +1,16 @@
+{
+    "name": "com.vanhaodev.soundmanager",
+    "rootNamespace": "",
+    "references": [
+        "GUID:2ffb18b1718fab04ba78cb5c14bbd018"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
