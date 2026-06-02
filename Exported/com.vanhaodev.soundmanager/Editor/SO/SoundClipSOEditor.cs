@@ -1,67 +1,149 @@
-﻿using UnityEditor;
+using UnityEditor;
 using UnityEngine;
 
 namespace vanhaodev.soundmanager.editor
 {
-	[CustomEditor(typeof(SoundClipSO))]
-	public class SoundClipSOEditor : Editor
-	{
-		private SoundClipPlayerUtils _player;
-		private SoundClipSO _so;
+    [CustomEditor(typeof(SoundClipSO))]
+    public class SoundClipSOEditor : Editor
+    {
+        private SoundClipPlayerUtils _player;
+        private SoundClipSO _so;
 
-		private void OnEnable()
-		{
-			_so = (SoundClipSO)target;
+        private SerializedProperty _loadType;
+        private SerializedProperty _directClip;
+        private SerializedProperty _resourcesPath;
+        private SerializedProperty _volume;
+#if ADDRESSABLES_SUPPORT
+        private SerializedProperty _addressableRef;
+#endif
 
-			_player = new SoundClipPlayerUtils();
-			_player.SetSO(_so);
-			_player.SetRepaintTarget(this);
-		}
-		private void OnDisable()
-		{
-			_player?.Dispose();
-		}
+        private void OnEnable()
+        {
+            _so = (SoundClipSO)target;
 
-		public override void OnInspectorGUI()
-		{
-			_so = (SoundClipSO)target;
+            _loadType = serializedObject.FindProperty("LoadType");
+            _directClip = serializedObject.FindProperty("DirectClip");
+            _resourcesPath = serializedObject.FindProperty("ResourcesPath");
+            _volume = serializedObject.FindProperty("Volume");
+#if ADDRESSABLES_SUPPORT
+            _addressableRef = serializedObject.FindProperty("AddressableRef");
+#endif
 
-			DrawDefaultInspector();
-			DrawDefaultChannelPopup();
+            _player = new SoundClipPlayerUtils();
+            _player.SetSO(_so);
+            _player.SetRepaintTarget(this);
+        }
 
-			EditorGUILayout.Space(10);
-			DrawAudioClipPreview();
+        private void OnDisable()
+        {
+            _player?.Dispose();
+        }
 
-			if (GUI.changed)
-				EditorUtility.SetDirty(_so);
-		}
+        public override void OnInspectorGUI()
+        {
+            _so = (SoundClipSO)target;
+            serializedObject.Update();
 
-		private void DrawDefaultChannelPopup()
-		{
-			string[] guids = AssetDatabase.FindAssets("t:SoundManagerSO");
-			if (guids.Length == 0) return;
+            EditorGUILayout.PropertyField(_loadType);
 
-			string path = AssetDatabase.GUIDToAssetPath(guids[0]);
-			SoundManagerSO sm = AssetDatabase.LoadAssetAtPath<SoundManagerSO>(path);
+            EditorGUILayout.Space(5);
 
-			if (sm == null || sm.Channels == null || sm.Channels.Count == 0)
-				return;
+            var loadType = (AudioLoadType)_loadType.enumValueIndex;
 
-			int index = Mathf.Max(_so.DefaultChannel, 0);
+            switch (loadType)
+            {
+                case AudioLoadType.Direct:
+                    EditorGUILayout.PropertyField(_directClip, new GUIContent("Audio Clip"));
+                    break;
 
-			index = EditorGUILayout.Popup(
-				"Default Channel",
-				index,
-				sm.Channels.ToArray()
-			);
+                case AudioLoadType.Resources:
+                    EditorGUILayout.PropertyField(_resourcesPath, new GUIContent("Resources Path"));
+                    EditorGUILayout.HelpBox("Path relative to Resources folder.\nExample: Audio/Music/MainTheme", MessageType.Info);
+                    break;
 
-			_so.DefaultChannel = index;
-		}
+                case AudioLoadType.Addressables:
+#if ADDRESSABLES_SUPPORT
+                    EditorGUILayout.PropertyField(_addressableRef, new GUIContent("Addressable Reference"));
+#else
+                    EditorGUILayout.HelpBox(
+                        "Addressables package not detected.\n\n" +
+                        "To enable:\n" +
+                        "1. Install 'Addressables' from Package Manager\n" +
+                        "2. Add 'ADDRESSABLES_SUPPORT' to:\n" +
+                        "   Edit > Project Settings > Player > Scripting Define Symbols",
+                        MessageType.Warning);
+#endif
+                    break;
+            }
 
-		private void DrawAudioClipPreview()
-		{
-			if (_player == null) return;
-			_player.OnGUI();
-		}
-	}
+            EditorGUILayout.Space(5);
+            EditorGUILayout.PropertyField(_volume);
+
+            DrawDefaultChannelPopup();
+
+            EditorGUILayout.Space(10);
+            DrawLoadStatusInfo(loadType);
+            DrawAudioClipPreview();
+
+            serializedObject.ApplyModifiedProperties();
+        }
+
+        private void DrawDefaultChannelPopup()
+        {
+            string[] guids = AssetDatabase.FindAssets("t:SoundManagerSO");
+            if (guids.Length == 0) return;
+
+            string path = AssetDatabase.GUIDToAssetPath(guids[0]);
+            SoundManagerSO sm = AssetDatabase.LoadAssetAtPath<SoundManagerSO>(path);
+
+            if (sm == null || sm.Channels == null || sm.Channels.Count == 0)
+                return;
+
+            int index = Mathf.Max(_so.DefaultChannel, 0);
+
+            index = EditorGUILayout.Popup(
+                "Default Channel",
+                index,
+                sm.Channels.ToArray()
+            );
+
+            if (index != _so.DefaultChannel)
+            {
+                Undo.RecordObject(_so, "Change Default Channel");
+                _so.DefaultChannel = index;
+                EditorUtility.SetDirty(_so);
+            }
+        }
+
+        private void DrawLoadStatusInfo(AudioLoadType loadType)
+        {
+            if (loadType == AudioLoadType.Direct)
+                return;
+
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField("Runtime Status:", GUILayout.Width(100));
+
+            if (Application.isPlaying)
+            {
+                if (_so.IsLoading)
+                    EditorGUILayout.LabelField("Loading...", EditorStyles.boldLabel);
+                else if (_so.IsLoaded)
+                    EditorGUILayout.LabelField("Loaded", EditorStyles.boldLabel);
+                else
+                    EditorGUILayout.LabelField("Not Loaded", EditorStyles.miniLabel);
+            }
+            else
+            {
+                EditorGUILayout.LabelField("(Play mode only)", EditorStyles.miniLabel);
+            }
+
+            EditorGUILayout.EndHorizontal();
+        }
+
+        private void DrawAudioClipPreview()
+        {
+            if (_player == null) return;
+            _player.OnGUI();
+        }
+    }
 }

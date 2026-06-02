@@ -48,10 +48,11 @@ _Add your audio clip and rename the SO to something easy to remember_
 _Click **Refresh Clip** to preview the sound_
 
 **Fields explanation:**
-1. **Clip**: The main audio file  
-2. **Volume**: Adjust the volume of this clip  
+1. **Load Type**: How to load the audio clip (see [Audio Load Types](#audio-load-types) section)
+2. **Audio Clip / Resources Path / Addressable Reference**: Depends on Load Type
+3. **Volume**: Adjust the volume of this clip  
    - Example: background sounds (like birds) should be lower than 1  
-3. **Default Channel**:  
+4. **Default Channel**:  
    - Groups sounds into channels (Music, SFX, etc.)  
    - Sounds in the same channel share the same volume control  
 
@@ -232,6 +233,131 @@ _soundManager.RefreshVolume((int)SoundChannelType.Music);
 * Always store `playId` if you need to stop a sound
 * After changing volume → call `RefreshVolume`
 * Call `Clear()` after a sound-heavy scene to free unused SoundPlayers and return them to the pool.
+
+---
+
+## Audio Load Types
+
+Sound Manager supports 3 different ways to load audio clips, allowing you to optimize memory usage based on your needs.
+
+### Load Type Options
+
+| Load Type | RAM Usage | Use Case |
+|-----------|-----------|----------|
+| **Direct** | High (loaded on startup) | Short SFX, frequently played sounds |
+| **Resources** | On-demand | Medium-length sounds, voice clips |
+| **Addressables** | On-demand + unload | Large music files, streaming audio |
+
+### 1. Direct (Default)
+
+Audio clip is referenced directly and loaded into RAM when the game starts.
+
+- **Pros**: Instant playback, no loading delay
+- **Cons**: Uses RAM even when not playing
+- **Best for**: UI sounds, short SFX
+
+### 2. Resources
+
+Audio clip is loaded from the `Resources` folder when needed.
+
+- **Pros**: Reduced initial memory, simple setup
+- **Cons**: Files must be in Resources folder
+- **Best for**: Voice clips, medium-length sounds
+
+**Setup:**
+1. Place your audio file in a `Resources` folder (e.g., `Assets/Resources/Audio/Music/MainTheme.wav`)
+2. Set **Load Type** to `Resources`
+3. Enter the path without extension: `Audio/Music/MainTheme`
+
+### 3. Addressables (Advanced)
+
+Audio clip is loaded via Unity Addressables system for maximum control.
+
+- **Pros**: Full control over load/unload, best for large projects
+- **Cons**: Requires Addressables package setup
+- **Best for**: Background music, large audio files
+
+**Setup:**
+1. Install **Addressables** package from Package Manager
+2. Add `ADDRESSABLES_SUPPORT` to Scripting Define Symbols:
+   - Edit → Project Settings → Player → Scripting Define Symbols
+3. Mark your audio files as Addressable
+4. Set **Load Type** to `Addressables`
+5. Assign the Addressable Reference
+
+### Preloading & Unloading
+
+For `Resources` and `Addressables` load types, you can preload clips to avoid delay:
+
+```csharp
+// Preload a single clip
+_soundManager.PreloadClip((int)SoundLibraryNameType.MainTheme, () => {
+    Debug.Log("Clip ready!");
+});
+
+// Preload multiple clips
+_soundManager.PreloadClips(new int[] {
+    (int)SoundLibraryNameType.MainTheme,
+    (int)SoundLibraryNameType.BattleMusic
+}, () => {
+    Debug.Log("All clips ready!");
+});
+
+// Unload when no longer needed
+_soundManager.UnloadClip((int)SoundLibraryNameType.MainTheme);
+```
+
+### When to Unload?
+
+Choose based on how the sound is used:
+
+| Usage Pattern | Load Type | Unload Strategy |
+|---------------|-----------|-----------------|
+| **Frequent, short** (UI click, hit) | Direct | Don't unload |
+| **Occasional, medium** (voice, skill) | Resources | Unload after usage batch |
+| **Rare, long** (BGM, cutscene) | Resources/Addressables | Unload when finished |
+
+**Simple rules:**
+- Play **many times/second** → keep in RAM (Direct)
+- Play **few times/minute** → load when needed, unload when idle
+- Play **once/scene** → unload immediately after
+
+**Example - Switching music:**
+```csharp
+public void SwitchMusic(int newMusicIndex)
+{
+    int oldMusic = _currentMusicIndex;
+    
+    // Stop old music first
+    _soundManager.StopByPlayId(_bgmPlayId);
+    
+    // Play new music
+    _bgmPlayId = _soundManager.PlayLoop(newMusicIndex);
+    _currentMusicIndex = newMusicIndex;
+    
+    // Unload old music AFTER playing new one
+    _soundManager.UnloadClip(oldMusic);
+}
+```
+
+> **Note:** Mobile devices need more aggressive unloading than PC due to RAM constraints.
+
+### Callback-based Play
+
+If you need to know when the sound actually starts playing:
+
+```csharp
+_soundManager.PlayLoop(
+    (int)SoundLibraryNameType.MainTheme,
+    (int)SoundChannelType.Music,
+    playId => {
+        if (playId == -1)
+            Debug.LogError("Failed to load clip!");
+        else
+            Debug.Log($"Playing with ID: {playId}");
+    }
+);
+```
 
 ---
 

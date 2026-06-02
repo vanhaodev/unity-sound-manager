@@ -197,7 +197,7 @@ namespace vanhaodev.soundmanager.editor
             if (_previewSource.isPlaying)
                 _previewSource.Stop();
 
-            _currentClip = _so.Clip;
+            _currentClip = GetEditorClip();
             _previewSource.clip = _currentClip;
 
             if (_currentClip != null && _currentClip.length > 0f)
@@ -205,6 +205,35 @@ namespace vanhaodev.soundmanager.editor
 
             _isPlaying = false;
             EditorApplication.update -= Update;
+        }
+
+        private AudioClip GetEditorClip()
+        {
+            if (_so == null) return null;
+
+            switch (_so.LoadType)
+            {
+                case AudioLoadType.Direct:
+                    return _so.DirectClip;
+
+                case AudioLoadType.Resources:
+                    if (string.IsNullOrEmpty(_so.ResourcesPath))
+                        return null;
+                    return Resources.Load<AudioClip>(_so.ResourcesPath);
+
+                case AudioLoadType.Addressables:
+#if ADDRESSABLES_SUPPORT
+                    if (_so.AddressableRef == null || !_so.AddressableRef.RuntimeKeyIsValid())
+                        return null;
+                    string path = AssetDatabase.GUIDToAssetPath(_so.AddressableRef.AssetGUID);
+                    return AssetDatabase.LoadAssetAtPath<AudioClip>(path);
+#else
+                    return null;
+#endif
+
+                default:
+                    return _so.DirectClip;
+            }
         }
 
         private void Update()

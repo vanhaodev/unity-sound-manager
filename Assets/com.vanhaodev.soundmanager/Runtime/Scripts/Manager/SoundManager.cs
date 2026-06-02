@@ -1,275 +1,388 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using com.vanhaodev.objectpool;
 using Unity.Plastic.Newtonsoft.Json;
 using UnityEngine;
 
 namespace vanhaodev.soundmanager
 {
-	public partial class SoundManager : MonoBehaviour
-	{
-		[SerializeField] private SoundManagerSO _soundManagerSO;
-		[SerializeField] private SoundPlayer _soundPlayerPrefab;
-		private ObjectPool<SoundPlayer> _pool;
-		private Dictionary<int /*channel*/, Dictionary<int /*playId*/, SoundPlayer>> _playingSounds;
-		private float _masterVolume = 1;
-		private Dictionary<int, float> _channelVolumes;
-		private int _nextPlayId = 1;
-		public float MasterVolume => _masterVolume;
-		public Dictionary<int, float> ChannelVolumes => _channelVolumes;
-		private void Awake()
-		{
-			_pool = new ObjectPool<SoundPlayer>(
-				CreateSoundPlayer,
-				initialSize: 2,
-				onGet: null,
-				onRelease: ResetSoundPlayer,
-				onDestroy: (g) => { Destroy(g.gameObject); }
-			);
+    public partial class SoundManager : MonoBehaviour
+    {
+        [SerializeField] private SoundManagerSO _soundManagerSO;
+        [SerializeField] private SoundPlayer _soundPlayerPrefab;
+        private ObjectPool<SoundPlayer> _pool;
+        private Dictionary<int, Dictionary<int, SoundPlayer>> _playingSounds;
+        private float _masterVolume = 1;
+        private Dictionary<int, float> _channelVolumes;
+        private int _nextPlayId = 1;
+        public float MasterVolume => _masterVolume;
+        public Dictionary<int, float> ChannelVolumes => _channelVolumes;
 
-			_playingSounds = new();
+        private void Awake()
+        {
+            _pool = new ObjectPool<SoundPlayer>(
+                CreateSoundPlayer,
+                initialSize: 2,
+                onGet: null,
+                onRelease: ResetSoundPlayer,
+                onDestroy: (g) => { Destroy(g.gameObject); }
+            );
 
-			_channelVolumes = new();
-			for (int i = 0; i < _soundManagerSO.Channels.Count; i++)
-			{
-				_channelVolumes.Add(i, 1);
-			}
-		}
+            _playingSounds = new();
 
-		private SoundPlayer CreateSoundPlayer()
-		{
-			var sp = Instantiate(_soundPlayerPrefab, transform);
-			return sp;
-		}
+            _channelVolumes = new();
+            for (int i = 0; i < _soundManagerSO.Channels.Count; i++)
+            {
+                _channelVolumes.Add(i, 1);
+            }
+        }
 
-		private void ResetSoundPlayer(SoundPlayer player)
-		{
-			player.OnReset();
-		}
+        private SoundPlayer CreateSoundPlayer()
+        {
+            var sp = Instantiate(_soundPlayerPrefab, transform);
+            return sp;
+        }
 
-		/// <summary>
-		/// Ensures that the active pool does not exceed the limit (16 by default).
-		/// This method only releases one-shot sounds (AudioSource.loop == false) if necessary.
-		/// Looping sounds are never taken or released by this method, so they will continue playing.
-		/// </summary>
-		/// <param name="channel">The preferred channel to check first.</param>
-		private void CheckLimitPlayer(int channel)
-		{
-			if (_pool.ActiveCount <= 16)
-				return;
+        private void ResetSoundPlayer(SoundPlayer player)
+        {
+            player.OnReset();
+        }
 
-			SoundPlayer player = null;
-			int instanceId = -1;
-			int targetChannel = -1;
+        private void CheckLimitPlayer(int channel)
+        {
+            if (_pool.ActiveCount <= 16)
+                return;
 
-			// 1. Try preferred channel first, only take one-shot sounds
-			if (_playingSounds.TryGetValue(channel, out var dict) && dict.Count > 0)
-			{
-				foreach (var kv in dict)
-				{
-					if (!kv.Value.AudioSource.loop) // only release shots
-					{
-						player = kv.Value;
-						instanceId = kv.Key;
-						targetChannel = channel;
-						break;
-					}
-				}
-			}
+            SoundPlayer player = null;
+            int instanceId = -1;
+            int targetChannel = -1;
 
-			// 2. Fallback: search any channel for one-shot sounds
-			if (player == null)
-			{
-				foreach (var kvp in _playingSounds)
-				{
-					dict = kvp.Value;
-					if (dict.Count == 0) continue;
+            if (_playingSounds.TryGetValue(channel, out var dict) && dict.Count > 0)
+            {
+                foreach (var kv in dict)
+                {
+                    if (!kv.Value.AudioSource.loop)
+                    {
+                        player = kv.Value;
+                        instanceId = kv.Key;
+                        targetChannel = channel;
+                        break;
+                    }
+                }
+            }
 
-					foreach (var kv in dict)
-					{
-						if (!kv.Value.AudioSource.loop)
-						{
-							player = kv.Value;
-							instanceId = kv.Key;
-							targetChannel = kvp.Key;
-							break;
-						}
-					}
+            if (player == null)
+            {
+                foreach (var kvp in _playingSounds)
+                {
+                    dict = kvp.Value;
+                    if (dict.Count == 0) continue;
 
-					if (player != null) break;
-				}
-			}
+                    foreach (var kv in dict)
+                    {
+                        if (!kv.Value.AudioSource.loop)
+                        {
+                            player = kv.Value;
+                            instanceId = kv.Key;
+                            targetChannel = kvp.Key;
+                            break;
+                        }
+                    }
 
-			// 3. Release the found one-shot sound
-			if (player != null)
-			{
-				_playingSounds[targetChannel].Remove(instanceId); // O(1)
-				_pool.Release(player);
-			}
-		}
+                    if (player != null) break;
+                }
+            }
 
-		/// <summary>
-		/// Plays a one-shot sound. The sound will automatically return to the pool
-		/// after it finishes playing (for the number of times specified by playCount).
-		/// </summary>
-		/// <param name="soundIndex">The index of the sound in the SoundClips list.</param>
-		/// <param name="channelIndex">
-		/// The channel to play the sound on. If -1, the sound's default channel is used.
-		/// </param>
-		/// <param name="playCount">Number of times to play the clip consecutively.</param>
-		/// <returns>
-		/// Returns a unique play ID that can be used to stop the sound prematurely
-		/// via StopByPlayId().
-		/// </returns>
-		public int PlayOneShot(int soundIndex, int channelIndex = -1, int playCount = 1)
-		{
-			var lib = _soundManagerSO.SoundClips[soundIndex];
-			if (channelIndex == -1) channelIndex = lib.DefaultChannel;
+            if (player != null)
+            {
+                _playingSounds[targetChannel].Remove(instanceId);
+                _pool.Release(player);
+            }
+        }
 
-			CheckLimitPlayer(channelIndex);
+        /// <summary>
+        /// Plays a one-shot sound. If the clip uses Resources/Addressables loading,
+        /// it will be loaded first (async), then played automatically.
+        /// </summary>
+        public int PlayOneShot(int soundIndex, int channelIndex = -1, int playCount = 1)
+        {
+            var lib = _soundManagerSO.SoundClips[soundIndex];
+            if (channelIndex == -1) channelIndex = lib.DefaultChannel;
 
-			var player = _pool.Get();
-			int playId = _nextPlayId++;
-			player.Channel = channelIndex;
-			player.CurrentPlayId = playId;
-			player.AudioSource.clip = lib.Clip;
-			player.AudioSource.loop = false;
-			player.Init(lib, _channelVolumes[channelIndex], _masterVolume);
-			player.gameObject.SetActive(true);
+            int playId = _nextPlayId++;
 
-			if (!_playingSounds.TryGetValue(channelIndex, out var dict))
-				_playingSounds[channelIndex] = dict = new Dictionary<int, SoundPlayer>();
-			dict[playId] = player;
+            if (lib.IsLoaded)
+            {
+                PlayOneShotInternal(lib, channelIndex, playCount, playId);
+            }
+            else
+            {
+                lib.LoadClip(clip =>
+                {
+                    if (clip != null)
+                        PlayOneShotInternal(lib, channelIndex, playCount, playId);
+                    else
+                        Debug.LogWarning($"[SoundManager] Failed to load clip for PlayOneShot: {lib.name}");
+                });
+            }
 
-			StartCoroutine(WaitAndReturnToPool(player, playId, playCount));
-			return playId;
-		}
+            return playId;
+        }
 
-		/// <summary>
-		/// Plays a looping sound. The sound will continue playing indefinitely
-		/// until stopped manually using StopByPlayId().
-		/// Note: Looping sounds are never released automatically by CheckLimitPlayer().
-		/// </summary>
-		/// <param name="soundIndex">The index of the sound in the SoundClips list.</param>
-		/// <param name="channelIndex">
-		/// The channel to play the sound on. If -1, the sound's default channel is used.
-		/// </param>
-		/// <returns>
-		/// Returns a unique play ID that can be used to stop the looping sound
-		/// via StopByPlayId().
-		/// </returns>
-		public int PlayLoop(int soundIndex, int channelIndex = -1)
-		{
-			var lib = _soundManagerSO.SoundClips[soundIndex];
-			if (channelIndex == -1) channelIndex = lib.DefaultChannel;
+        /// <summary>
+        /// Plays a one-shot sound with callback when loading completes.
+        /// </summary>
+        public int PlayOneShot(int soundIndex, int channelIndex, int playCount, Action<int> onPlay)
+        {
+            var lib = _soundManagerSO.SoundClips[soundIndex];
+            if (channelIndex == -1) channelIndex = lib.DefaultChannel;
 
-			CheckLimitPlayer(channelIndex);
+            int playId = _nextPlayId++;
 
-			var player = _pool.Get();
-			int playId = _nextPlayId++;
-			player.Channel = channelIndex;
-			player.CurrentPlayId = playId;
-			player.AudioSource.clip = lib.Clip;
-			player.AudioSource.loop = true;
-			player.Init(lib, _channelVolumes[channelIndex], _masterVolume);
-			player.gameObject.SetActive(true);
+            if (lib.IsLoaded)
+            {
+                PlayOneShotInternal(lib, channelIndex, playCount, playId);
+                onPlay?.Invoke(playId);
+            }
+            else
+            {
+                lib.LoadClip(clip =>
+                {
+                    if (clip != null)
+                    {
+                        PlayOneShotInternal(lib, channelIndex, playCount, playId);
+                        onPlay?.Invoke(playId);
+                    }
+                    else
+                    {
+                        onPlay?.Invoke(-1);
+                    }
+                });
+            }
 
-			if (!_playingSounds.TryGetValue(channelIndex, out var dict))
-				_playingSounds[channelIndex] = dict = new Dictionary<int, SoundPlayer>();
-			dict[playId] = player;
+            return playId;
+        }
 
-			player.AudioSource.Play();
-			return playId;
-		}
+        private void PlayOneShotInternal(SoundClipSO lib, int channelIndex, int playCount, int playId)
+        {
+            CheckLimitPlayer(channelIndex);
 
-		/// <summary>
-		/// Stops a sound (one-shot or loop) using its play ID.
-		/// The sound is stopped immediately and returned to the object pool.
-		/// </summary>
-		/// <param name="playId">The unique play ID returned from PlayOneShot() or PlayLoop().</param>
-		/// <returns>Stop success</returns>
-		public bool StopByPlayId(int playId)
-		{
-			foreach (var dict in _playingSounds.Values)
-			{
-				if (dict.TryGetValue(playId, out var player))
-				{
-					dict.Remove(playId);
-					player.AudioSource.Stop();
-					_pool.Release(player);
-					return true;
-				}
-			}
+            var player = _pool.Get();
+            player.Channel = channelIndex;
+            player.CurrentPlayId = playId;
+            player.AudioSource.clip = lib.Clip;
+            player.AudioSource.loop = false;
+            player.Init(lib, _channelVolumes[channelIndex], _masterVolume);
+            player.gameObject.SetActive(true);
 
-			return false;
-		}
+            if (!_playingSounds.TryGetValue(channelIndex, out var dict))
+                _playingSounds[channelIndex] = dict = new Dictionary<int, SoundPlayer>();
+            dict[playId] = player;
 
-		private IEnumerator WaitAndReturnToPool(SoundPlayer player, int playId, int playCount)
-		{
-			var clip = player.AudioSource.clip;
-			float length = clip.length;
+            StartCoroutine(WaitAndReturnToPool(player, playId, playCount));
+        }
 
-			for (int i = 0; i < playCount; i++)
-			{
-				if (player.CurrentPlayId != playId) yield break;
+        /// <summary>
+        /// Plays a looping sound. If the clip uses Resources/Addressables loading,
+        /// it will be loaded first (async), then played automatically.
+        /// </summary>
+        public int PlayLoop(int soundIndex, int channelIndex = -1)
+        {
+            var lib = _soundManagerSO.SoundClips[soundIndex];
+            if (channelIndex == -1) channelIndex = lib.DefaultChannel;
 
-				try
-				{
-					player.AudioSource.Play();
-				}
-				catch
-				{
-					yield break;
-				}
+            int playId = _nextPlayId++;
 
-				// End: double-check playId to avoid race condition
-				if (player.CurrentPlayId != playId) yield break;
+            if (lib.IsLoaded)
+            {
+                PlayLoopInternal(lib, channelIndex, playId);
+            }
+            else
+            {
+                lib.LoadClip(clip =>
+                {
+                    if (clip != null)
+                        PlayLoopInternal(lib, channelIndex, playId);
+                    else
+                        Debug.LogWarning($"[SoundManager] Failed to load clip for PlayLoop: {lib.name}");
+                });
+            }
 
-				yield return new WaitForSeconds(length);
-			}
+            return playId;
+        }
 
-			if (player.CurrentPlayId != playId) yield break;
+        /// <summary>
+        /// Plays a looping sound with callback when loading completes.
+        /// </summary>
+        public int PlayLoop(int soundIndex, int channelIndex, Action<int> onPlay)
+        {
+            var lib = _soundManagerSO.SoundClips[soundIndex];
+            if (channelIndex == -1) channelIndex = lib.DefaultChannel;
 
-			if (_playingSounds.TryGetValue(player.Channel, out var dict))
-				dict.Remove(playId);
+            int playId = _nextPlayId++;
 
-			_pool.Release(player);
-		}
+            if (lib.IsLoaded)
+            {
+                PlayLoopInternal(lib, channelIndex, playId);
+                onPlay?.Invoke(playId);
+            }
+            else
+            {
+                lib.LoadClip(clip =>
+                {
+                    if (clip != null)
+                    {
+                        PlayLoopInternal(lib, channelIndex, playId);
+                        onPlay?.Invoke(playId);
+                    }
+                    else
+                    {
+                        onPlay?.Invoke(-1);
+                    }
+                });
+            }
 
-		/// <summary>
-		/// Clears the sound system.
-		/// If <paramref name="clearPlaying"/> is true, all active and idle SoundPlayers are destroyed via the pool.
-		/// If false, only idle (not currently playing) SoundPlayers are cleared.
-		/// </summary>
-		/// <param name="clearPlaying">
-		/// True to force stop/destroy all sounds; false to only clear idle sounds.
-		/// </param>
-		public void Clear(bool clearPlaying)
-		{
-			_pool.Clear(includeActive: clearPlaying);
+            return playId;
+        }
 
-			// Also clear the spawned dictionary, since pool objects are destroyed
-			if (clearPlaying)
-			{
-				foreach (var dict in _playingSounds.Values)
-				{
-					dict.Clear();
-				}
-			}
-		}
+        private void PlayLoopInternal(SoundClipSO lib, int channelIndex, int playId)
+        {
+            CheckLimitPlayer(channelIndex);
 
-		public string Dump()
-		{
-			var result = new Dictionary<int, List<int>>();
+            var player = _pool.Get();
+            player.Channel = channelIndex;
+            player.CurrentPlayId = playId;
+            player.AudioSource.clip = lib.Clip;
+            player.AudioSource.loop = true;
+            player.Init(lib, _channelVolumes[channelIndex], _masterVolume);
+            player.gameObject.SetActive(true);
 
-			foreach (var ch in _playingSounds)
-			{
-				result[ch.Key] = new List<int>(ch.Value.Keys);
-			}
+            if (!_playingSounds.TryGetValue(channelIndex, out var dict))
+                _playingSounds[channelIndex] = dict = new Dictionary<int, SoundPlayer>();
+            dict[playId] = player;
 
-			return JsonConvert.SerializeObject(result, Formatting.Indented);
-		}
-	}
+            player.AudioSource.Play();
+        }
+
+        public bool StopByPlayId(int playId)
+        {
+            foreach (var dict in _playingSounds.Values)
+            {
+                if (dict.TryGetValue(playId, out var player))
+                {
+                    dict.Remove(playId);
+                    player.AudioSource.Stop();
+                    _pool.Release(player);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private IEnumerator WaitAndReturnToPool(SoundPlayer player, int playId, int playCount)
+        {
+            var clip = player.AudioSource.clip;
+            float length = clip.length;
+
+            for (int i = 0; i < playCount; i++)
+            {
+                if (player.CurrentPlayId != playId) yield break;
+
+                try
+                {
+                    player.AudioSource.Play();
+                }
+                catch
+                {
+                    yield break;
+                }
+
+                if (player.CurrentPlayId != playId) yield break;
+
+                yield return new WaitForSeconds(length);
+            }
+
+            if (player.CurrentPlayId != playId) yield break;
+
+            if (_playingSounds.TryGetValue(player.Channel, out var dict))
+                dict.Remove(playId);
+
+            _pool.Release(player);
+        }
+
+        /// <summary>
+        /// Preloads a clip so it's ready to play without delay.
+        /// Useful for Resources/Addressables clips.
+        /// </summary>
+        public void PreloadClip(int soundIndex, Action onComplete = null)
+        {
+            var lib = _soundManagerSO.SoundClips[soundIndex];
+            if (lib.IsLoaded)
+            {
+                onComplete?.Invoke();
+                return;
+            }
+
+            lib.LoadClip(_ => onComplete?.Invoke());
+        }
+
+        /// <summary>
+        /// Preloads multiple clips.
+        /// </summary>
+        public void PreloadClips(int[] soundIndices, Action onAllComplete = null)
+        {
+            int remaining = soundIndices.Length;
+            if (remaining == 0)
+            {
+                onAllComplete?.Invoke();
+                return;
+            }
+
+            foreach (var idx in soundIndices)
+            {
+                PreloadClip(idx, () =>
+                {
+                    remaining--;
+                    if (remaining <= 0)
+                        onAllComplete?.Invoke();
+                });
+            }
+        }
+
+        /// <summary>
+        /// Unloads a clip from memory (Resources/Addressables only).
+        /// </summary>
+        public void UnloadClip(int soundIndex)
+        {
+            var lib = _soundManagerSO.SoundClips[soundIndex];
+            lib.UnloadClip();
+        }
+
+        public void Clear(bool clearPlaying)
+        {
+            _pool.Clear(includeActive: clearPlaying);
+
+            if (clearPlaying)
+            {
+                foreach (var dict in _playingSounds.Values)
+                {
+                    dict.Clear();
+                }
+            }
+        }
+
+        public string Dump()
+        {
+            var result = new Dictionary<int, List<int>>();
+
+            foreach (var ch in _playingSounds)
+            {
+                result[ch.Key] = new List<int>(ch.Value.Keys);
+            }
+
+            return JsonConvert.SerializeObject(result, Formatting.Indented);
+        }
+    }
 }
