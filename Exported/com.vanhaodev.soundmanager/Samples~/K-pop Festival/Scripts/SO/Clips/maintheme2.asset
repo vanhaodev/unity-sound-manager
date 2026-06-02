@@ -12,6 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 382800cd521a43a8a7817a5e7e60d9d9, type: 3}
   m_Name: maintheme2
   m_EditorClassIdentifier: com.vanhaodev.soundmanager::vanhaodev.soundmanager.SoundClipSO
-  Clip: {fileID: 8300000, guid: db119e6a8b08c1b448b4cc5cfe384263, type: 3}
+  LoadType: 1
+  DirectClip: {fileID: 0}
+  ResourcesPath: Audios\Music\Supernatural - NewJeans
   DefaultChannel: 0
   Volume: 1
