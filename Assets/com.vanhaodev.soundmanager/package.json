@@ -1,8 +1,8 @@
 {
   "name": "com.vanhaodev.soundmanager",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "displayName": "Sound Manager",
-  "description": "A lightweight and high-performance sound system for Unity. Supports SFX, music, channel-based volume control, and simple playback APIs.",
+  "description": "A lightweight and high-performance sound system for Unity. Supports SFX, music, channel-based volume control, simple playback APIs, and flexible audio loading via Direct reference, Resources, and Addressables.",
   "unity": "6000.0",
   "author": {
     "name": "vanhaodev"

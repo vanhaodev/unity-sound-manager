@@ -2,8 +2,10 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using com.vanhaodev.objectpool;
-using Unity.Plastic.Newtonsoft.Json;
 using UnityEngine;
+#if UNITY_EDITOR
+using System.Text;
+#endif
 
 namespace vanhaodev.soundmanager
 {
@@ -373,16 +375,25 @@ namespace vanhaodev.soundmanager
             }
         }
 
+#if UNITY_EDITOR
         public string Dump()
         {
-            var result = new Dictionary<int, List<int>>();
+            var sb = new StringBuilder();
+            sb.Append("{\n");
 
+            var channelIndex = 0;
             foreach (var ch in _playingSounds)
             {
-                result[ch.Key] = new List<int>(ch.Value.Keys);
+                sb.Append("  \"").Append(ch.Key).Append("\": [");
+                sb.Append(string.Join(", ", ch.Value.Keys));
+                sb.Append(']');
+                sb.Append(channelIndex < _playingSounds.Count - 1 ? ",\n" : "\n");
+                channelIndex++;
             }
 
-            return JsonConvert.SerializeObject(result, Formatting.Indented);
+            sb.Append('}');
+            return sb.ToString();
         }
+#endif
     }
 }
