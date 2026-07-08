@@ -14,7 +14,9 @@ namespace vanhaodev.soundmanager.Samples.K_pop_Festival
 		public void PlaySFXTest()
 		{
 			_soundManager.PlayOneShot(0, (int)SoundChannelType.SFX);
+#if UNITY_EDITOR
 			Debug.Log(_soundManager.Dump());
+#endif
 		}
 
 		public void PlayMainTheme1()
@@ -22,7 +24,9 @@ namespace vanhaodev.soundmanager.Samples.K_pop_Festival
 			if (_theme1PlayId != -1) return;
 			StopMainTheme2();
 			_theme1PlayId = _soundManager.PlayLoop((int)SoundLibraryNameType.maintheme1, (int)SoundChannelType.BGM);
+#if UNITY_EDITOR
 			Debug.Log(_soundManager.Dump());
+#endif
 		}
 
 		public void StopMainTheme1()
@@ -30,7 +34,9 @@ namespace vanhaodev.soundmanager.Samples.K_pop_Festival
 			if (_soundManager.StopByPlayId(_theme1PlayId))
 			{
 				_theme1PlayId = -1;
+#if UNITY_EDITOR
 				Debug.Log(_soundManager.Dump());
+#endif
 			}
 		}
 
@@ -39,7 +45,9 @@ namespace vanhaodev.soundmanager.Samples.K_pop_Festival
 			if (_theme2PlayId != -1) return;
 			StopMainTheme1();
 			_theme2PlayId = _soundManager.PlayLoop((int)SoundLibraryNameType.maintheme2, (int)SoundChannelType.BGM);
+#if UNITY_EDITOR
 			Debug.Log(_soundManager.Dump());
+#endif
 		}
 
 		public void StopMainTheme2()
@@ -47,7 +55,9 @@ namespace vanhaodev.soundmanager.Samples.K_pop_Festival
 			if (_soundManager.StopByPlayId(_theme2PlayId))
 			{
 				_theme2PlayId = -1;
+#if UNITY_EDITOR
 				Debug.Log(_soundManager.Dump());
+#endif
 			}
 		}
 
@@ -56,7 +66,9 @@ namespace vanhaodev.soundmanager.Samples.K_pop_Festival
 			_soundManager.Clear(false);
 			_theme1PlayId = -1;
 			_theme2PlayId = -1;
+#if UNITY_EDITOR
 			Debug.Log(_soundManager.Dump());
+#endif
 		}
 
 		public void ClearAll()
@@ -64,7 +76,9 @@ namespace vanhaodev.soundmanager.Samples.K_pop_Festival
 			_soundManager.Clear(true);
 			_theme1PlayId = -1;
 			_theme2PlayId = -1;
+#if UNITY_EDITOR
 			Debug.Log(_soundManager.Dump());
+#endif
 		}
 
 		//volume

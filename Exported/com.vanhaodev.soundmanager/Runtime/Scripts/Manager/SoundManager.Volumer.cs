@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using com.vanhaodev.objectpool;
-using Unity.Plastic.Newtonsoft.Json;
 using UnityEngine;
 
 namespace vanhaodev.soundmanager
