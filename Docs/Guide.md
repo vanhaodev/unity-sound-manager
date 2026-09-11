@@ -253,8 +253,11 @@ Sound Manager supports 3 different ways to load audio clips, allowing you to opt
 Audio clip is referenced directly and loaded into RAM when the game starts.
 
 - **Pros**: Instant playback, no loading delay
-- **Cons**: Uses RAM even when not playing
+- **Cons**: Uses RAM even when not playing (unless you unload its audio data)
 - **Best for**: UI sounds, short SFX
+
+The clip file is always part of the build. `PreloadClip`/`UnloadClip` load or free its **audio data** in RAM
+(`AudioClip.LoadAudioData`/`UnloadAudioData`); see [Audio Import Settings](#audio-import-settings).
 
 ### 2. Resources
 
@@ -267,7 +270,9 @@ Audio clip is loaded from the `Resources` folder when needed.
 **Setup:**
 1. Place your audio file in a `Resources` folder (e.g., `Assets/Resources/Audio/Music/MainTheme.wav`)
 2. Set **Load Type** to `Resources`
-3. Enter the path without extension: `Audio/Music/MainTheme`
+3. Drag the clip into **Audio Clip**, the path is filled in for you: `Audio/Music/MainTheme`
+   - Or type the path relative to `Resources`, without extension
+   - Only the path is saved, so the SO holds no reference to the clip
 
 ### 3. Addressables (Advanced)
 
@@ -279,15 +284,55 @@ Audio clip is loaded via Unity Addressables system for maximum control.
 
 **Setup:**
 1. Install **Addressables** package from Package Manager
-2. Add `ADDRESSABLES_SUPPORT` to Scripting Define Symbols:
-   - Edit → Project Settings → Player → Scripting Define Symbols
-3. Mark your audio files as Addressable
-4. Set **Load Type** to `Addressables`
-5. Assign the Addressable Reference
+   - Support is detected automatically, no Scripting Define Symbol needed
+2. Mark your audio files as Addressable
+3. Set **Load Type** to `Addressables`
+4. Assign the Addressable Reference
+
+**Try it in the K-pop Festival sample:**
+1. Install **Addressables** package from Package Manager
+2. Select `AddressableAudios/bell.wav` in the imported sample and tick **Addressable** in the Inspector
+3. Play the scene and press **SFX (Addressables)**
+
+_Without Addressables installed the sample still compiles; the button only logs a warning._
+
+### Audio Import Settings
+
+Select an audio file in the Project window to see these in the Inspector.
+They decide how Unity keeps the sound in memory, on top of the Load Type chosen in `SoundClipSO`.
+
+| Setting | What it does |
+|---------|--------------|
+| **Force To Mono** | Mixes stereo into one channel, halving memory. Fine for most SFX. |
+| **Normalize** | Shown with Force To Mono: raises the volume to full after mixing. |
+| **Load In Background** | On: audio data loads without freezing the game, ready a few frames later. Off: loads instantly but can stall a frame on big files. |
+| **Ambisonic** | Only for 360°/VR ambisonic recordings. Leave off. |
+| **Load Type** | **Decompress On Load**: stored fully decoded in RAM (most RAM, least CPU). **Compressed In Memory**: kept compressed, decoded while playing (less RAM, more CPU). **Streaming**: read from disk while playing (almost no RAM). |
+| **Preload Audio Data** | On: audio data loads together with the scene or asset that references the clip. Off: loads on first play or when you preload it. |
+| **Compression Format** | **PCM**: uncompressed, largest. **Vorbis**: small, adjust with Quality. **ADPCM**: medium size, cheap to decode, good for short noisy SFX. |
+| **Quality** | Vorbis only: lower means a smaller file. |
+| **Sample Rate Setting** | Lowering the sample rate shrinks the file at the cost of high frequencies. |
+
+How they affect Sound Manager (checked in Unity 6000.3):
+
+- **Preload Audio Data on**: a Direct clip is loaded when the scene loads, so it plays at once without a warning.
+- **Preload Audio Data off**: a Direct clip starts unloaded. Call `PreloadClip` first, otherwise it plays late with a warning and joins "AutoLoaded".
+- **Load In Background on**: `PreloadClip`'s callback fires a few frames later, when the data is ready. Off: it fires immediately.
+- `UnloadClip` stops the sound if it is playing, then frees the data. The next play or preload brings it back.
+
+Suggested presets:
+
+| Sound | Load Type | Preload Audio Data | Load In Background | Compression |
+|-------|-----------|--------------------|--------------------|-------------|
+| UI click, hit, footsteps (short, frequent) | Decompress On Load | On | Off | ADPCM or Vorbis |
+| Voice, skills, medium SFX | Compressed In Memory | Off (preload when needed) | On | Vorbis |
+| Background music, long ambience | Streaming | Off | On | Vorbis |
+
+The K-pop Festival sample follows these presets: `bell.wav` uses the first row, the two music tracks use the last row.
 
 ### Preloading & Unloading
 
-For `Resources` and `Addressables` load types, you can preload clips to avoid delay:
+Preload clips to avoid delay (Direct clips load their audio data, Resources/Addressables clips load the asset):
 
 ```csharp
 // Preload a single clip
@@ -303,9 +348,83 @@ _soundManager.PreloadClips(new int[] {
     Debug.Log("All clips ready!");
 });
 
-// Unload when no longer needed
+// Unload when no longer needed (Resources: unload, Addressables: release)
 _soundManager.UnloadClip((int)SoundLibraryNameType.MainTheme);
+
+// Unload the same group you preloaded
+_soundManager.UnloadClips(new int[] {
+    (int)SoundLibraryNameType.MainTheme,
+    (int)SoundLibraryNameType.BattleMusic
+});
+
+// Unload every Resources/Addressables clip at once, e.g. when leaving a level
+_soundManager.UnloadAllClips();
 ```
+
+Nothing is unloaded automatically: you decide what to free and when. A typical pattern:
+
+```csharp
+int[] _bossSounds = { (int)SoundLibraryNameType.BossTheme, (int)SoundLibraryNameType.BossRoar };
+
+void EnterBossFight() => _soundManager.PreloadClips(_bossSounds, StartFight);
+void ExitBossFight()  => _soundManager.UnloadClips(_bossSounds);
+```
+
+- Calling play/preload several times while a clip is still loading shares a single load.
+- `UnloadClip` stops any sound still playing that clip before unloading it.
+- `UnloadClip` during loading is honored: the clip is released as soon as the load finishes.
+
+### Available Sounds
+
+Check which sounds can play right away (their clip is loaded; for Direct clips, their audio data is loaded):
+
+```csharp
+bool ready = _soundManager.IsClipLoaded((int)SoundLibraryNameType.BossTheme);
+List<int> available = _soundManager.GetAvailableSounds();
+```
+
+### Sound Groups (optional)
+
+Groups are optional: preloading and playing work the same whether you use them or not.
+Put sounds in a group when you preload them, then unload the whole group in one call:
+
+```csharp
+// Preload and put in a group in one statement
+_soundManager.PreloadClip((int)SoundLibraryNameType.BossTheme).AddToGroup("Boss");
+_soundManager.PreloadClips(_bossSounds, StartFight).AddToGroup("Boss");
+
+// Sounds of the group that can play right away
+List<int> bossReady = _soundManager.Groups.GetAvailableSounds("Boss");
+
+// Unload/release the whole group
+_soundManager.Groups.Unload("Boss");
+```
+
+- A sound only joins a group by being preloaded with `.AddToGroup(...)`.
+- A sound belongs to one group only: preloading it into another group moves it out of the old one.
+- `Unload` unloads every sound currently in the group.
+- `_soundManager.Groups.GetGroup(id)` tells which group a sound is in (`null` if none).
+
+### Playing Without Preloading
+
+Playing a sound that isn't loaded still works: it loads first, then plays a bit late.
+This covers Resources/Addressables clips that were never loaded or were unloaded, and Direct clips whose audio data
+isn't loaded (imported without "Preload Audio Data", or freed with `UnloadClip`).
+To help you spot these, the sound manager:
+
+- Logs a warning (Editor and Development builds only), once per load.
+- Moves the sound to the `SoundGroups.AutoLoadedGroup` group ("AutoLoaded"), even if it was in another group before
+  (e.g. preloaded into "Boss", unloaded with `UnloadClip`, then played again).
+
+```csharp
+// Which sounds were played without preloading, and are loaded right now
+List<int> missed = _soundManager.Groups.GetAvailableSounds(SoundGroups.AutoLoadedGroup);
+
+// Free all of them at once
+_soundManager.Groups.Unload(SoundGroups.AutoLoadedGroup);
+```
+
+Preloading the sound later (e.g. `.AddToGroup("Boss")`) moves it out of "AutoLoaded".
 
 ### When to Unload?
 
@@ -313,7 +432,7 @@ Choose based on how the sound is used:
 
 | Usage Pattern | Load Type | Unload Strategy |
 |---------------|-----------|-----------------|
-| **Frequent, short** (UI click, hit) | Direct | Don't unload |
+| **Frequent, short** (UI click, hit) | Direct | Don't unload, or unload its audio data when leaving the scene that uses it |
 | **Occasional, medium** (voice, skill) | Resources | Unload after usage batch |
 | **Rare, long** (BGM, cutscene) | Resources/Addressables | Unload when finished |
 

@@ -26,6 +26,8 @@ namespace vanhaodev.soundmanager
         {
             AudioSource.Stop();
             AudioSource.clip = null;
+            // Play ids start at 1, so a one-shot coroutine still waiting on this player stops at its next id check
+            CurrentPlayId = 0;
             gameObject.SetActive(false);
         }
     }

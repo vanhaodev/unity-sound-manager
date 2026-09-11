@@ -2,7 +2,9 @@
     "name": "com.vanhaodev.soundmanager",
     "rootNamespace": "",
     "references": [
-        "GUID:2ffb18b1718fab04ba78cb5c14bbd018"
+        "GUID:2ffb18b1718fab04ba78cb5c14bbd018",
+        "GUID:9e24947de15b9834991c9d8411ea37cf",
+        "GUID:84651a3751eca9349aac36a66bba901b"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
@@ -11,6 +13,12 @@
     "precompiledReferences": [],
     "autoReferenced": true,
     "defineConstraints": [],
-    "versionDefines": [],
+    "versionDefines": [
+        {
+            "name": "com.unity.addressables",
+            "expression": "",
+            "define": "ADDRESSABLES_SUPPORT"
+        }
+    ],
     "noEngineReferences": false
 }

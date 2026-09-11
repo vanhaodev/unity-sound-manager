@@ -120,6 +120,7 @@ namespace vanhaodev.soundmanager
             }
             else
             {
+                TrackPlayWithoutPreload(soundIndex, lib);
                 lib.LoadClip(clip =>
                 {
                     if (clip != null)
@@ -149,6 +150,7 @@ namespace vanhaodev.soundmanager
             }
             else
             {
+                TrackPlayWithoutPreload(soundIndex, lib);
                 lib.LoadClip(clip =>
                 {
                     if (clip != null)
@@ -202,6 +204,7 @@ namespace vanhaodev.soundmanager
             }
             else
             {
+                TrackPlayWithoutPreload(soundIndex, lib);
                 lib.LoadClip(clip =>
                 {
                     if (clip != null)
@@ -231,6 +234,7 @@ namespace vanhaodev.soundmanager
             }
             else
             {
+                TrackPlayWithoutPreload(soundIndex, lib);
                 lib.LoadClip(clip =>
                 {
                     if (clip != null)
@@ -312,54 +316,6 @@ namespace vanhaodev.soundmanager
                 dict.Remove(playId);
 
             _pool.Release(player);
-        }
-
-        /// <summary>
-        /// Preloads a clip so it's ready to play without delay.
-        /// Useful for Resources/Addressables clips.
-        /// </summary>
-        public void PreloadClip(int soundIndex, Action onComplete = null)
-        {
-            var lib = _soundManagerSO.SoundClips[soundIndex];
-            if (lib.IsLoaded)
-            {
-                onComplete?.Invoke();
-                return;
-            }
-
-            lib.LoadClip(_ => onComplete?.Invoke());
-        }
-
-        /// <summary>
-        /// Preloads multiple clips.
-        /// </summary>
-        public void PreloadClips(int[] soundIndices, Action onAllComplete = null)
-        {
-            int remaining = soundIndices.Length;
-            if (remaining == 0)
-            {
-                onAllComplete?.Invoke();
-                return;
-            }
-
-            foreach (var idx in soundIndices)
-            {
-                PreloadClip(idx, () =>
-                {
-                    remaining--;
-                    if (remaining <= 0)
-                        onAllComplete?.Invoke();
-                });
-            }
-        }
-
-        /// <summary>
-        /// Unloads a clip from memory (Resources/Addressables only).
-        /// </summary>
-        public void UnloadClip(int soundIndex)
-        {
-            var lib = _soundManagerSO.SoundClips[soundIndex];
-            lib.UnloadClip();
         }
 
         public void Clear(bool clearPlaying)

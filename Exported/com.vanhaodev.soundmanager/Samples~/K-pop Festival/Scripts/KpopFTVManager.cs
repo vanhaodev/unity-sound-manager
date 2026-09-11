@@ -19,6 +19,20 @@ namespace vanhaodev.soundmanager.Samples.K_pop_Festival
 #endif
 		}
 
+		public void PlaySFXAddressablesTest()
+		{
+			// ADDRESSABLES_SUPPORT comes from this asmdef's versionDefines, so the sample still compiles without Addressables
+#if ADDRESSABLES_SUPPORT
+			// AddressableAudios/bell.wav must be marked Addressable first, otherwise the load fails
+			_soundManager.PlayOneShot((int)SoundLibraryNameType.bell_addressables, (int)SoundChannelType.SFX);
+#if UNITY_EDITOR
+			Debug.Log(_soundManager.Dump());
+#endif
+#else
+			Debug.LogWarning("[KpopFTVManager] This SFX uses Addressables. Install 'Addressables' from Package Manager to play it.");
+#endif
+		}
+
 		public void PlayMainTheme1()
 		{
 			if (_theme1PlayId != -1) return;
@@ -63,9 +77,8 @@ namespace vanhaodev.soundmanager.Samples.K_pop_Festival
 
 		public void ClearNotPlaying()
 		{
+			// Destroys only idle pooled players; themes still playing keep their play ids
 			_soundManager.Clear(false);
-			_theme1PlayId = -1;
-			_theme2PlayId = -1;
 #if UNITY_EDITOR
 			Debug.Log(_soundManager.Dump());
 #endif
@@ -79,6 +92,78 @@ namespace vanhaodev.soundmanager.Samples.K_pop_Festival
 #if UNITY_EDITOR
 			Debug.Log(_soundManager.Dump());
 #endif
+		}
+
+		//preload & unload
+		private const string SfxGroup = "SFX";
+		private const string ThemesGroup = "Themes";
+
+		// Preloads both groups. Sounds played without pressing this first end up in the AutoLoaded group.
+		public void PreloadSounds()
+		{
+			int pendingGroups = 2;
+
+			void OnGroupPreloaded()
+			{
+				if (--pendingGroups == 0)
+					Debug.Log($"[KpopFTVManager] SFX and Themes preloaded. {DescribeSounds()}");
+			}
+
+			_soundManager.PreloadClips(GetSfxSounds(), OnGroupPreloaded).AddToGroup(SfxGroup);
+			_soundManager.PreloadClips(new[] { (int)SoundLibraryNameType.maintheme1, (int)SoundLibraryNameType.maintheme2 },
+				OnGroupPreloaded).AddToGroup(ThemesGroup);
+		}
+
+		public void UnloadSounds()
+		{
+			_soundManager.Groups.Unload(SfxGroup);
+			_soundManager.Groups.Unload(ThemesGroup);
+			ResetUnloadedThemePlayIds();
+			Debug.Log($"[KpopFTVManager] SFX and Themes unloaded. {DescribeSounds()}");
+		}
+
+		// Frees the sounds that were played without being preloaded
+		public void UnloadAutoLoadedSounds()
+		{
+			_soundManager.Groups.Unload(SoundGroups.AutoLoadedGroup);
+			ResetUnloadedThemePlayIds();
+			Debug.Log($"[KpopFTVManager] AutoLoaded sounds unloaded. {DescribeSounds()}");
+		}
+
+		private static int[] GetSfxSounds()
+		{
+#if ADDRESSABLES_SUPPORT
+			// bell_addressables only loads once AddressableAudios/bell.wav is marked Addressable
+			return new[] { (int)SoundLibraryNameType.bell, (int)SoundLibraryNameType.bell_addressables };
+#else
+			return new[] { (int)SoundLibraryNameType.bell };
+#endif
+		}
+
+		// Unloading stops a theme that is still playing, so its play id is no longer valid
+		private void ResetUnloadedThemePlayIds()
+		{
+			if (!_soundManager.IsClipLoaded((int)SoundLibraryNameType.maintheme1))
+				_theme1PlayId = -1;
+			if (!_soundManager.IsClipLoaded((int)SoundLibraryNameType.maintheme2))
+				_theme2PlayId = -1;
+		}
+
+		private string DescribeSounds()
+		{
+			return $"Available: [{DescribeSounds(_soundManager.GetAvailableSounds())}] " +
+			       $"SFX: [{DescribeSounds(_soundManager.Groups.GetAvailableSounds(SfxGroup))}] " +
+			       $"Themes: [{DescribeSounds(_soundManager.Groups.GetAvailableSounds(ThemesGroup))}] " +
+			       $"AutoLoaded: [{DescribeSounds(_soundManager.Groups.GetAvailableSounds(SoundGroups.AutoLoadedGroup))}]";
+		}
+
+		private static string DescribeSounds(List<int> soundIndices)
+		{
+			var names = new List<string>();
+			foreach (var soundIndex in soundIndices)
+				names.Add(((SoundLibraryNameType)soundIndex).ToString());
+
+			return string.Join(", ", names);
 		}
 
 		//volume

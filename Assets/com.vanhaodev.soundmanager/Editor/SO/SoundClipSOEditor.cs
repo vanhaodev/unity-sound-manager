@@ -8,6 +8,7 @@ namespace vanhaodev.soundmanager.editor
     {
         private SoundClipPlayerUtils _player;
         private SoundClipSO _so;
+        private readonly ResourcesClipPathField _resourcesPathField = new ResourcesClipPathField();
 
         private SerializedProperty _loadType;
         private SerializedProperty _directClip;
@@ -54,23 +55,27 @@ namespace vanhaodev.soundmanager.editor
             {
                 case AudioLoadType.Direct:
                     EditorGUILayout.PropertyField(_directClip, new GUIContent("Audio Clip"));
+                    DrawAssetPathLabel(AssetDatabase.GetAssetPath(_directClip.objectReferenceValue));
                     break;
 
                 case AudioLoadType.Resources:
-                    EditorGUILayout.PropertyField(_resourcesPath, new GUIContent("Resources Path"));
-                    EditorGUILayout.HelpBox("Path relative to Resources folder.\nExample: Audio/Music/MainTheme", MessageType.Info);
+                    AudioClip resourcesClip = _resourcesPathField.Draw(_resourcesPath);
+                    DrawAssetPathLabel(AssetDatabase.GetAssetPath(resourcesClip));
+                    EditorGUILayout.HelpBox(
+                        "Drag a clip from any Resources folder, or type its path relative to Resources.\n" +
+                        "Only the path is saved, the SO keeps no reference to the clip.",
+                        MessageType.Info);
                     break;
 
                 case AudioLoadType.Addressables:
 #if ADDRESSABLES_SUPPORT
                     EditorGUILayout.PropertyField(_addressableRef, new GUIContent("Addressable Reference"));
+                    // AssetReference only serializes the GUID, so resolve it back to a path for display
+                    DrawAssetPathLabel(AssetDatabase.GUIDToAssetPath(_addressableRef.FindPropertyRelative("m_AssetGUID").stringValue));
 #else
                     EditorGUILayout.HelpBox(
                         "Addressables package not detected.\n\n" +
-                        "To enable:\n" +
-                        "1. Install 'Addressables' from Package Manager\n" +
-                        "2. Add 'ADDRESSABLES_SUPPORT' to:\n" +
-                        "   Edit > Project Settings > Player > Scripting Define Symbols",
+                        "Install 'Addressables' from Package Manager to enable this load type.",
                         MessageType.Warning);
 #endif
                     break;
@@ -81,11 +86,26 @@ namespace vanhaodev.soundmanager.editor
 
             DrawDefaultChannelPopup();
 
+            // Apply before drawing the preview so it sees this frame's edits on the SO
+            serializedObject.ApplyModifiedProperties();
+
             EditorGUILayout.Space(10);
             DrawLoadStatusInfo(loadType);
             DrawAudioClipPreview();
+        }
 
-            serializedObject.ApplyModifiedProperties();
+        // Shows which file the SO points to; selectable so the path can be copied
+        private static void DrawAssetPathLabel(string assetPath)
+        {
+            if (string.IsNullOrEmpty(assetPath))
+                return;
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                EditorGUILayout.PrefixLabel("Path");
+                EditorGUILayout.SelectableLabel(assetPath, EditorStyles.miniLabel,
+                    GUILayout.Height(EditorGUIUtility.singleLineHeight));
+            }
         }
 
         private void DrawDefaultChannelPopup()
@@ -117,9 +137,6 @@ namespace vanhaodev.soundmanager.editor
 
         private void DrawLoadStatusInfo(AudioLoadType loadType)
         {
-            if (loadType == AudioLoadType.Direct)
-                return;
-
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.LabelField("Runtime Status:", GUILayout.Width(100));
 

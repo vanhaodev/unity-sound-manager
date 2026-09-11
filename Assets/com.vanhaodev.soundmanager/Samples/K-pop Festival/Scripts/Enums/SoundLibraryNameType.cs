@@ -8,5 +8,6 @@ namespace vanhaodev.soundmanager.generated
 		bell = 0,
 		maintheme1 = 1,
 		maintheme2 = 2,
+		bell_addressables = 3,
 	}
 }

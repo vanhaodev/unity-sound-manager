@@ -8,7 +8,7 @@ using UnityEngine.ResourceManagement.AsyncOperations;
 namespace vanhaodev.soundmanager
 {
     [CreateAssetMenu(fileName = "SoundClip", menuName = "Sound Manager/Create Sound Clip", order = 1)]
-    public class SoundClipSO : ScriptableObject
+    public partial class SoundClipSO : ScriptableObject
     {
         [Header("Load Settings")]
         [Tooltip("How to load the audio clip.")]
@@ -37,6 +37,12 @@ namespace vanhaodev.soundmanager
         private AudioClip _loadedClip;
         private bool _isLoading;
 
+        // Everyone waiting on the in-flight load; they all share one load instead of starting their own
+        private Action<AudioClip> _pendingCallbacks;
+
+        // UnloadClip arrived while loading: an async load can't be cancelled, so its result is released on arrival
+        private bool _unloadRequested;
+
 #if ADDRESSABLES_SUPPORT
         private AsyncOperationHandle<AudioClip> _addressableHandle;
 #endif
@@ -55,44 +61,63 @@ namespace vanhaodev.soundmanager
             }
         }
 
-        public bool IsLoaded => LoadType == AudioLoadType.Direct || _loadedClip != null;
+        /// <summary>
+        /// True when the clip can play right away. For Direct clips this means their audio data is loaded
+        /// (always the case with the default "Preload Audio Data" import setting until UnloadClip is called).
+        /// </summary>
+        public bool IsLoaded => LoadType == AudioLoadType.Direct ? IsDirectAudioDataLoaded : _loadedClip != null;
         public bool IsLoading => _isLoading;
 
         public void LoadClip(Action<AudioClip> onComplete = null)
         {
+            if (IsLoaded)
+            {
+                onComplete?.Invoke(Clip);
+                return;
+            }
+
+            if (LoadType == AudioLoadType.Direct && DirectClip == null)
+            {
+                Debug.LogWarning($"[SoundClipSO] DirectClip is not assigned on {name}");
+                onComplete?.Invoke(null);
+                return;
+            }
+
+            // A new load request wins over an unload that is still waiting for the current load
+            _unloadRequested = false;
+            _pendingCallbacks += onComplete;
+
+            // Starting a second load here would leak: its Addressables handle overwrites the first one
+            if (_isLoading)
+                return;
+
             switch (LoadType)
             {
                 case AudioLoadType.Direct:
-                    onComplete?.Invoke(DirectClip);
+                    LoadDirectAudioData();
                     break;
 
                 case AudioLoadType.Resources:
-                    LoadFromResources(onComplete);
+                    LoadFromResources();
                     break;
 
                 case AudioLoadType.Addressables:
 #if ADDRESSABLES_SUPPORT
-                    LoadFromAddressables(onComplete);
+                    LoadFromAddressables();
 #else
-                    Debug.LogWarning($"[SoundClipSO] Addressables not supported. Add ADDRESSABLES_SUPPORT to Scripting Define Symbols.");
-                    onComplete?.Invoke(null);
+                    Debug.LogWarning($"[SoundClipSO] Addressables package not installed. Install 'Addressables' from Package Manager to load {name}.");
+                    CompleteLoad(null);
 #endif
                     break;
             }
         }
 
-        private void LoadFromResources(Action<AudioClip> onComplete)
+        private void LoadFromResources()
         {
-            if (_loadedClip != null)
-            {
-                onComplete?.Invoke(_loadedClip);
-                return;
-            }
-
             if (string.IsNullOrEmpty(ResourcesPath))
             {
                 Debug.LogWarning($"[SoundClipSO] ResourcesPath is empty on {name}");
-                onComplete?.Invoke(null);
+                CompleteLoad(null);
                 return;
             }
 
@@ -100,29 +125,21 @@ namespace vanhaodev.soundmanager
             var request = Resources.LoadAsync<AudioClip>(ResourcesPath);
             request.completed += _ =>
             {
-                _loadedClip = request.asset as AudioClip;
-                _isLoading = false;
-
-                if (_loadedClip == null)
+                var clip = request.asset as AudioClip;
+                if (clip == null)
                     Debug.LogWarning($"[SoundClipSO] Failed to load clip from Resources: {ResourcesPath}");
 
-                onComplete?.Invoke(_loadedClip);
+                CompleteLoad(clip);
             };
         }
 
 #if ADDRESSABLES_SUPPORT
-        private void LoadFromAddressables(Action<AudioClip> onComplete)
+        private void LoadFromAddressables()
         {
-            if (_loadedClip != null)
-            {
-                onComplete?.Invoke(_loadedClip);
-                return;
-            }
-
             if (AddressableRef == null || !AddressableRef.RuntimeKeyIsValid())
             {
                 Debug.LogWarning($"[SoundClipSO] AddressableRef is invalid on {name}");
-                onComplete?.Invoke(null);
+                CompleteLoad(null);
                 return;
             }
 
@@ -130,38 +147,66 @@ namespace vanhaodev.soundmanager
             _addressableHandle = AddressableRef.LoadAssetAsync<AudioClip>();
             _addressableHandle.Completed += handle =>
             {
-                _isLoading = false;
                 if (handle.Status == AsyncOperationStatus.Succeeded)
                 {
-                    _loadedClip = handle.Result;
-                    onComplete?.Invoke(_loadedClip);
+                    CompleteLoad(handle.Result);
                 }
                 else
                 {
                     Debug.LogWarning($"[SoundClipSO] Failed to load clip from Addressables: {name}");
-                    onComplete?.Invoke(null);
+                    // A failed handle still holds a reference count until released
+                    Addressables.Release(handle);
+                    CompleteLoad(null);
                 }
             };
         }
 #endif
 
+        private void CompleteLoad(AudioClip clip)
+        {
+            _isLoading = false;
+            // Direct clips stay referenced by DirectClip; only Resources/Addressables keep the loaded asset here
+            if (LoadType != AudioLoadType.Direct)
+                _loadedClip = clip;
+
+            if (_unloadRequested)
+            {
+                _unloadRequested = false;
+                UnloadClip();
+                clip = null;
+            }
+
+            var callbacks = _pendingCallbacks;
+            _pendingCallbacks = null;
+            callbacks?.Invoke(clip);
+        }
+
+        /// <summary>
+        /// Frees the clip's memory: Resources clips are unloaded, Addressables clips are released,
+        /// Direct clips keep their reference but free their audio data. The next load brings it back.
+        /// </summary>
         public void UnloadClip()
         {
-            if (LoadType == AudioLoadType.Direct)
+            if (_isLoading)
+            {
+                _unloadRequested = true;
                 return;
-
-            if (_loadedClip == null)
-                return;
+            }
 
             switch (LoadType)
             {
+                case AudioLoadType.Direct:
+                    UnloadDirectAudioData();
+                    break;
+
                 case AudioLoadType.Resources:
-                    Resources.UnloadAsset(_loadedClip);
+                    if (_loadedClip != null)
+                        Resources.UnloadAsset(_loadedClip);
                     break;
 
 #if ADDRESSABLES_SUPPORT
                 case AudioLoadType.Addressables:
-                    if (_addressableHandle.IsValid())
+                    if (_loadedClip != null && _addressableHandle.IsValid())
                         Addressables.Release(_addressableHandle);
                     break;
 #endif
@@ -172,7 +217,9 @@ namespace vanhaodev.soundmanager
 
         private void OnDisable()
         {
-            UnloadClip();
+            // Direct audio data is managed by Unity's import settings unless the game unloads it explicitly
+            if (LoadType != AudioLoadType.Direct)
+                UnloadClip();
         }
     }
 }

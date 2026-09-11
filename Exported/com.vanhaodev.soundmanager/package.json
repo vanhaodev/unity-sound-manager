@@ -1,8 +1,8 @@
 {
   "name": "com.vanhaodev.soundmanager",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "displayName": "Sound Manager",
-  "description": "A lightweight and high-performance sound system for Unity. Supports SFX, music, channel-based volume control, simple playback APIs, and flexible audio loading via Direct reference, Resources, and Addressables.",
+  "description": "A lightweight and high-performance sound system for Unity. Supports SFX, music, channel-based volume control, simple playback APIs, and flexible audio loading via Direct reference, Resources, and Addressables (optional, detected automatically). Preload and unload sounds one by one, in groups or all at once, check which sounds are ready, and spot sounds played without preloading. Requires com.vanhaodev.objectpool.",
   "unity": "6000.0",
   "author": {
     "name": "vanhaodev"
@@ -18,7 +18,7 @@
   "samples": [
     {
       "displayName": "K-pop Festival",
-      "description": "Example scene demonstrating how to use the Sound Manager.",
+      "description": "Example scene demonstrating playback, channel volumes, Direct/Resources/Addressables load types, preloading and unloading sound groups.",
       "path": "Samples~/K-pop Festival"
     }
   ]

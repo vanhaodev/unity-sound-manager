@@ -17,6 +17,12 @@ namespace vanhaodev.soundmanager.editor
 
         private Editor _editor;
 
+        // Source the cached preview clip was loaded from; any mismatch means the clip is stale
+        private AudioLoadType _sourceLoadType;
+        private AudioClip _sourceDirectClip;
+        private string _sourceResourcesPath;
+        private string _sourceAddressableGuid;
+
         public void SetSO(SoundClipSO so)
         {
             if (_so == so) return;
@@ -54,7 +60,11 @@ namespace vanhaodev.soundmanager.editor
 
             if (_previewSource != null)
                 _previewSource.volume = _so.Volume;
-            
+
+            // Checked on every draw so load type edits, undo/redo and the Addressables picker all refresh the preview
+            if (IsClipSourceChanged())
+                UpdateClip();
+
 
             // Background container
             Rect bgRect = EditorGUILayout.BeginVertical(GUI.skin.box);
@@ -200,11 +210,36 @@ namespace vanhaodev.soundmanager.editor
             _currentClip = GetEditorClip();
             _previewSource.clip = _currentClip;
 
+            if (_so != null)
+            {
+                _sourceLoadType = _so.LoadType;
+                _sourceDirectClip = _so.DirectClip;
+                _sourceResourcesPath = _so.ResourcesPath;
+                _sourceAddressableGuid = GetAddressableGuid();
+            }
+
             if (_currentClip != null && _currentClip.length > 0f)
                 _previewSource.time = 0f;
 
             _isPlaying = false;
             EditorApplication.update -= Update;
+        }
+
+        private bool IsClipSourceChanged()
+        {
+            return _so.LoadType != _sourceLoadType
+                   || _so.DirectClip != _sourceDirectClip
+                   || _so.ResourcesPath != _sourceResourcesPath
+                   || GetAddressableGuid() != _sourceAddressableGuid;
+        }
+
+        private string GetAddressableGuid()
+        {
+#if ADDRESSABLES_SUPPORT
+            return _so.AddressableRef?.AssetGUID;
+#else
+            return null;
+#endif
         }
 
         private AudioClip GetEditorClip()
